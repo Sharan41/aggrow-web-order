@@ -1,5 +1,12 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
+/** Dev: `/api` (Vite proxy → backend). Prod: `VITE_API_URL` from Render build env, no trailing slash. */
+export function getApiBaseURL(): string {
+  const raw = import.meta.env.VITE_API_URL?.trim();
+  if (raw) return raw.replace(/\/+$/, "");
+  return "/api";
+}
+
 const ACCESS_KEY = "aggrow_access_token";
 const REFRESH_KEY = "aggrow_refresh_token";
 
@@ -17,7 +24,7 @@ export const tokenStore = {
 };
 
 export const apiClient = axios.create({
-  baseURL: "/api",
+  baseURL: getApiBaseURL(),
   headers: { "Content-Type": "application/json" },
 });
 
@@ -36,7 +43,7 @@ async function tryRefresh(): Promise<string | null> {
   const refresh = tokenStore.getRefresh();
   if (!refresh) return null;
   try {
-    const { data } = await axios.post("/api/auth/refresh", { refresh_token: refresh });
+    const { data } = await axios.post(`${getApiBaseURL()}/auth/refresh`, { refresh_token: refresh });
     tokenStore.setTokens(data.access_token);
     return data.access_token as string;
   } catch {
