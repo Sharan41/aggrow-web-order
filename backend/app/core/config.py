@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 14
 
     FRONTEND_ORIGIN: str = "http://localhost:5173"
+    # Comma-separated extra origins (staging, preview URLs, etc.)
+    EXTRA_CORS_ORIGINS: str = ""
 
     MAIL_ENABLED: bool = False
     MAIL_USERNAME: str = ""
