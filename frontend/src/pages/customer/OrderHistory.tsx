@@ -24,7 +24,8 @@ export default function OrderHistory() {
         <div className="card p-8 text-center text-slate-500">No orders yet. Start by creating one.</div>
       ) : (
         <div className="card overflow-hidden">
-          <table className="min-w-full text-sm">
+          <div className="overflow-x-auto overscroll-x-contain touch-pan-x">
+            <table className="w-full min-w-max text-sm">
             <thead className="bg-slate-100">
               <tr>
                 <th className="text-left px-3 py-2">#</th>
@@ -59,7 +60,8 @@ export default function OrderHistory() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
     </div>

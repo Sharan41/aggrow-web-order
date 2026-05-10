@@ -240,8 +240,8 @@ function GroupEditor({
           </button>
         </div>
       </div>
-      <div className="overflow-auto">
-        <table className="min-w-full text-xs">
+      <div className="overflow-x-auto overscroll-x-contain touch-pan-x">
+        <table className="w-full min-w-max text-xs">
           <thead>
             <tr className="bg-slate-50">
               <th className="border px-2 py-1">S.No</th>

@@ -38,7 +38,8 @@ export default function HoDashboard() {
             View all
           </Link>
         </div>
-        <table className="min-w-full text-sm">
+        <div className="overflow-x-auto overscroll-x-contain touch-pan-x">
+          <table className="w-full min-w-max text-sm">
           <thead className="bg-slate-50">
             <tr>
               <th className="text-left px-3 py-2">#</th>
@@ -70,6 +71,7 @@ export default function HoDashboard() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

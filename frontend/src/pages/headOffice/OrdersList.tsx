@@ -67,7 +67,8 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
         <div className="card p-8 text-center text-slate-500">No orders match.</div>
       ) : (
         <div className="card overflow-hidden">
-          <table className="min-w-full text-sm">
+          <div className="overflow-x-auto overscroll-x-contain touch-pan-x">
+            <table className="w-full min-w-max text-sm">
             <thead className="bg-slate-100">
               <tr>
                 <th className="text-left px-3 py-2">#</th>
@@ -106,7 +107,8 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
     </div>
