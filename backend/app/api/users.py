@@ -78,6 +78,7 @@ def create_user(body: UserCreate, db: Session = Depends(get_db), _: User = Depen
         email=body.email,
         password_hash=hash_password(body.password),
         name=body.name,
+        mobile_number=body.mobile_number,
         role=body.role,
         branch_id=body.branch_id,
         active=True,
@@ -99,10 +100,19 @@ def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     data = body.model_dump(exclude_unset=True)
+    
+    # Handle email update - check uniqueness
+    if "email" in data and data["email"]:
+        existing = db.execute(select(User).where(User.email == data["email"], User.id != user_id)).scalar_one_or_none()
+        if existing:
+            raise HTTPException(status_code=409, detail="Email already in use")
+    
+    # Handle password update
     if "password" in data and data["password"]:
         user.password_hash = hash_password(data.pop("password"))
     elif "password" in data:
         data.pop("password")
+    
     for k, v in data.items():
         setattr(user, k, v)
     db.commit()

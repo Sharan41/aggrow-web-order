@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ordersApi } from "../../api/orders";
 import { useCatalog } from "../../hooks/useCatalog";
+import { useToast } from "../../components/Toast";
 import {
   buildCellMap,
   cellsToItems,
@@ -16,6 +17,7 @@ export default function HoOrderEdit() {
   const orderId = Number(id);
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { data: catalog } = useCatalog();
   const { data: order } = useQuery({
     queryKey: ["order", orderId],
@@ -46,7 +48,11 @@ export default function HoOrderEdit() {
         items: cellsToItems(cells, "ho"),
         ho_note: note || null,
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["order", orderId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["order", orderId] });
+      showToast("Order saved successfully");
+    },
+    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to save", "error"),
   });
 
   const forward = useMutation({
@@ -60,7 +66,10 @@ export default function HoOrderEdit() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["order", orderId] });
       qc.invalidateQueries({ queryKey: ["orders"] });
+      showToast("Order forwarded to factory successfully");
+      navigate("/ho/orders");
     },
+    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to forward", "error"),
   });
 
   const reject = useMutation({
@@ -68,8 +77,10 @@ export default function HoOrderEdit() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["order", orderId] });
       qc.invalidateQueries({ queryKey: ["orders"] });
+      showToast("Order rejected successfully");
       navigate("/ho/orders");
     },
+    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to reject", "error"),
   });
 
   if (!order || !catalog) return <div className="text-slate-500">Loading…</div>;
@@ -77,21 +88,21 @@ export default function HoOrderEdit() {
   const editable = order.status === "SUBMITTED_TO_HO";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4 px-3 md:px-0">
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">
+          <h1 className="text-xl md:text-2xl font-semibold">
             Order #{order.id} — {order.customer_name}
           </h1>
-          <div className="mt-1 text-slate-500 text-sm flex gap-2 items-center">
+          <div className="mt-1 text-slate-500 text-xs md:text-sm flex gap-2 items-center flex-wrap">
             <StatusBadge status={order.status} />
             {order.branch_name && <span>Branch: {order.branch_name}</span>}
           </div>
         </div>
         {editable && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
-              className="btn-danger"
+              className="btn-danger text-sm"
               disabled={reject.isPending}
               onClick={() => {
                 const reason = window.prompt("Rejection reason (optional):") ?? "";
@@ -100,11 +111,11 @@ export default function HoOrderEdit() {
             >
               Reject
             </button>
-            <button className="btn-secondary" disabled={save.isPending} onClick={() => save.mutate()}>
+            <button className="btn-secondary text-sm" disabled={save.isPending} onClick={() => save.mutate()}>
               Save Edits
             </button>
             <button
-              className="btn-primary"
+              className="btn-primary text-sm"
               disabled={forward.isPending}
               onClick={() => forward.mutate()}
             >
@@ -115,18 +126,18 @@ export default function HoOrderEdit() {
       </div>
 
       {order.customer_note && (
-        <div className="card p-4">
+        <div className="card p-3 md:p-4">
           <div className="text-xs uppercase text-slate-500 mb-1">Customer note</div>
-          <p className="text-sm whitespace-pre-wrap">{order.customer_note}</p>
+          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.customer_note}</p>
         </div>
       )}
 
-      <div className="card p-4">
-        <label className="block text-sm font-medium text-slate-700 mb-1">Head office note</label>
+      <div className="card p-3 md:p-4">
+        <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1">Head office note</label>
         {editable ? (
-          <textarea className="input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          <textarea className="input text-sm" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
         ) : (
-          <p className="text-sm whitespace-pre-wrap">{order.ho_note || "—"}</p>
+          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.ho_note || "—"}</p>
         )}
       </div>
 
@@ -134,7 +145,7 @@ export default function HoOrderEdit() {
         catalog={catalog}
         cells={cells}
         onChange={editable ? setCells : undefined}
-        mode={editable ? "ho-edit" : "view"}
+        mode={editable ? "ho-edit" : "ho-view"}
       />
     </div>
   );

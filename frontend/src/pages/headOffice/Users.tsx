@@ -2,11 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { getApiErrorMessage } from "../../api/errorMessage";
 import { usersApi } from "../../api/users";
-import type { UserRole } from "../../types";
+import { useToast } from "../../components/Toast";
+import type { User, UserRole } from "../../types";
 
 export default function HoUsers() {
   const qc = useQueryClient();
-  const [toggleActiveError, setToggleActiveError] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => usersApi.listUsers() });
   const { data: branches } = useQuery({
     queryKey: ["branches"],
@@ -16,7 +18,11 @@ export default function HoUsers() {
   const createBranch = useMutation({
     mutationFn: (body: { name: string; code: string; address?: string | null }) =>
       usersApi.createBranch(body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["branches"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["branches"] });
+      showToast("Branch created successfully");
+    },
+    onError: (err) => showToast(getApiErrorMessage(err), "error"),
   });
 
   const createUser = useMutation({
@@ -24,29 +30,58 @@ export default function HoUsers() {
       email: string;
       password: string;
       name: string;
+      mobile_number?: string | null;
       role: UserRole;
       branch_id?: number | null;
     }) => usersApi.createUser(body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      showToast("User created successfully");
+    },
+    onError: (err) => showToast(getApiErrorMessage(err), "error"),
+  });
+
+  const updateUser = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: {
+        email?: string;
+        password?: string | null;
+        name?: string;
+        mobile_number?: string | null;
+        active?: boolean;
+        role?: UserRole;
+        branch_id?: number | null;
+      };
+    }) => usersApi.updateUser(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      setEditingUser(null);
+      showToast("User updated successfully");
+    },
+    onError: (err) => showToast(getApiErrorMessage(err), "error"),
   });
 
   const toggleActive = useMutation({
     mutationFn: ({ id, active }: { id: number; active: boolean }) =>
       usersApi.updateUser(id, { active }),
     onSuccess: () => {
-      setToggleActiveError(null);
       qc.invalidateQueries({ queryKey: ["users"] });
+      showToast(updateUser.variables?.data.active ? "User activated" : "User deactivated");
     },
-    onError: (err) => setToggleActiveError(getApiErrorMessage(err)),
+    onError: (err) => showToast(getApiErrorMessage(err), "error"),
   });
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Users & Branches</h1>
+    <div className="space-y-4 md:space-y-6 px-3 md:px-0">
+      <h1 className="text-xl md:text-2xl font-semibold">Users & Branches</h1>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="card p-4">
-          <h2 className="font-medium mb-3">Branches</h2>
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
+        <div className="card p-3 md:p-4">
+          <h2 className="font-medium mb-3 text-base md:text-lg">Branches</h2>
           <BranchForm
             isSubmitting={createBranch.isPending}
             onCreate={async (b) => {
@@ -55,13 +90,11 @@ export default function HoUsers() {
           />
           <div className="mt-4 divide-y divide-slate-100">
             {(branches ?? []).map((b) => (
-              <div key={b.id} className="py-2 text-sm flex justify-between">
-                <div>
-                  <div className="font-medium">{b.name}</div>
-                  <div className="text-xs text-slate-500">
-                    {b.code}
-                    {b.address ? ` · ${b.address}` : ""}
-                  </div>
+              <div key={b.id} className="py-2 text-sm">
+                <div className="font-medium">{b.name}</div>
+                <div className="text-xs text-slate-500">
+                  {b.code}
+                  {b.address ? ` · ${b.address}` : ""}
                 </div>
               </div>
             ))}
@@ -69,8 +102,8 @@ export default function HoUsers() {
           </div>
         </div>
 
-        <div className="card p-4">
-          <h2 className="font-medium mb-3">Users</h2>
+        <div className="card p-3 md:p-4">
+          <h2 className="font-medium mb-3 text-base md:text-lg">Create User</h2>
           <UserForm
             branches={branches ?? []}
             isSubmitting={createUser.isPending}
@@ -78,51 +111,65 @@ export default function HoUsers() {
               await createUser.mutateAsync(u);
             }}
           />
-          {toggleActiveError && (
+        </div>
+      </div>
+
+      <div className="card p-3 md:p-4">
+        <h2 className="font-medium mb-3 text-base md:text-lg">Users</h2>
+        <div className="space-y-2">
+          {(users ?? []).map((u) => (
             <div
-              className="mb-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800"
-              role="alert"
+              key={u.id}
+              className="border border-slate-200 rounded-lg p-3 flex flex-col md:flex-row md:justify-between md:items-center gap-3"
             >
-              {toggleActiveError}
-              <button
-                type="button"
-                className="ml-2 underline text-rose-900"
-                onClick={() => setToggleActiveError(null)}
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
-          <div className="mt-4 divide-y divide-slate-100">
-            {(users ?? []).map((u) => (
-              <div key={u.id} className="py-2 text-sm flex justify-between items-center">
-                <div>
-                  <div className="font-medium">
-                    {u.name}{" "}
-                    <span className="text-xs text-slate-500">
-                      ({u.role}
-                      {u.branch?.name ? ` · ${u.branch.name}` : ""})
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-500">{u.email}</div>
+              <div className="flex-1">
+                <div className="font-medium text-sm md:text-base">
+                  {u.name}{" "}
+                  <span className="text-xs text-slate-500">
+                    ({u.role}
+                    {u.branch?.name ? ` · ${u.branch.name}` : ""})
+                  </span>
                 </div>
+                <div className="text-xs md:text-sm text-slate-600">{u.email}</div>
+                {u.mobile_number && (
+                  <div className="text-xs text-slate-500">📱 {u.mobile_number}</div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
                 <label className="inline-flex items-center gap-2 text-xs">
                   <input
                     type="checkbox"
                     checked={u.active}
                     disabled={toggleActive.isPending}
                     onChange={(e) => {
-                      setToggleActiveError(null);
                       toggleActive.mutate({ id: u.id, active: e.target.checked });
                     }}
                   />
                   Active
                 </label>
+                <button
+                  className="btn-secondary text-xs py-1 px-3"
+                  onClick={() => setEditingUser(u)}
+                >
+                  Edit
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
+
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          branches={branches ?? []}
+          isSubmitting={updateUser.isPending}
+          onClose={() => setEditingUser(null)}
+          onSave={async (data) => {
+            await updateUser.mutateAsync({ id: editingUser.id, data });
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -141,7 +188,7 @@ function BranchForm({
 
   return (
     <form
-      className="grid grid-cols-3 gap-2"
+      className="flex flex-col gap-2"
       onSubmit={async (e) => {
         e.preventDefault();
         setFormError(null);
@@ -161,25 +208,23 @@ function BranchForm({
     >
       {formError && (
         <div
-          className="col-span-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800"
+          className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800"
           role="alert"
         >
           {formError}
         </div>
       )}
-      <input className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-      <input className="input" placeholder="Code" value={code} onChange={(e) => setCode(e.target.value)} />
+      <input className="input text-sm" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+      <input className="input text-sm" placeholder="Code" value={code} onChange={(e) => setCode(e.target.value)} />
       <input
-        className="input"
+        className="input text-sm"
         placeholder="Address (optional)"
         value={address}
         onChange={(e) => setAddress(e.target.value)}
       />
-      <div className="col-span-3">
-        <button className="btn-primary" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Adding…" : "Add branch"}
-        </button>
-      </div>
+      <button className="btn-primary text-sm" type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Adding…" : "Add branch"}
+      </button>
     </form>
   );
 }
@@ -194,6 +239,7 @@ function UserForm({
     email: string;
     password: string;
     name: string;
+    mobile_number?: string | null;
     role: UserRole;
     branch_id?: number | null;
   }) => Promise<void>;
@@ -201,6 +247,7 @@ function UserForm({
 }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("CUSTOMER");
   const [branchId, setBranchId] = useState<number | "">("");
@@ -208,7 +255,7 @@ function UserForm({
 
   return (
     <form
-      className="grid grid-cols-2 gap-2"
+      className="flex flex-col gap-2"
       onSubmit={async (e) => {
         e.preventDefault();
         setFormError(null);
@@ -227,12 +274,14 @@ function UserForm({
             email: email.trim(),
             password,
             name: name.trim(),
+            mobile_number: mobile.trim() || null,
             role,
             branch_id: role === "CUSTOMER" ? Number(branchId) : null,
           });
           setEmail("");
           setPassword("");
           setName("");
+          setMobile("");
           setBranchId("");
         } catch (err) {
           setFormError(getApiErrorMessage(err));
@@ -241,35 +290,42 @@ function UserForm({
     >
       {formError && (
         <div
-          className="col-span-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800"
+          className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800"
           role="alert"
         >
           {formError}
         </div>
       )}
-      <input className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+      <input className="input text-sm" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
       <input
-        className="input"
+        className="input text-sm"
         placeholder="Email"
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
       <input
-        className="input"
+        className="input text-sm"
+        placeholder="Mobile Number (optional)"
+        type="tel"
+        value={mobile}
+        onChange={(e) => setMobile(e.target.value)}
+      />
+      <input
+        className="input text-sm"
         placeholder="Password"
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      <select className="input" value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
+      <select className="input text-sm" value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
         <option value="CUSTOMER">Customer (Branch)</option>
         <option value="HEAD_OFFICE">Head Office</option>
         <option value="FACTORY">Factory</option>
       </select>
       {role === "CUSTOMER" && (
         <select
-          className="input col-span-2"
+          className="input text-sm"
           value={branchId}
           onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : "")}
         >
@@ -281,11 +337,154 @@ function UserForm({
           ))}
         </select>
       )}
-      <div className="col-span-2">
-        <button className="btn-primary" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating…" : "Create user"}
-        </button>
-      </div>
+      <button className="btn-primary text-sm" type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Creating…" : "Create user"}
+      </button>
     </form>
+  );
+}
+
+function EditUserModal({
+  user,
+  branches,
+  isSubmitting,
+  onClose,
+  onSave,
+}: {
+  user: User;
+  branches: { id: number; name: string }[];
+  isSubmitting: boolean;
+  onClose: () => void;
+  onSave: (data: {
+    email?: string;
+    password?: string | null;
+    name?: string;
+    mobile_number?: string | null;
+    role?: UserRole;
+    branch_id?: number | null;
+  }) => Promise<void>;
+}) {
+  const [email, setEmail] = useState(user.email);
+  const [name, setName] = useState(user.name);
+  const [mobile, setMobile] = useState(user.mobile_number || "");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<UserRole>(user.role);
+  const [branchId, setBranchId] = useState<number | "">(user.branch_id ?? "");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
+        <h3 className="text-lg md:text-xl font-semibold mb-4">Edit User</h3>
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setFormError(null);
+            if (!email.trim() || !name.trim()) {
+              setFormError("Name and email are required.");
+              return;
+            }
+            if (role === "CUSTOMER" && branchId === "") {
+              setFormError("Customer users must have a branch selected.");
+              return;
+            }
+            try {
+              await onSave({
+                email: email.trim(),
+                name: name.trim(),
+                mobile_number: mobile.trim() || null,
+                password: password.trim() || null,
+                role,
+                branch_id: role === "CUSTOMER" ? Number(branchId) : null,
+              });
+            } catch (err) {
+              setFormError(getApiErrorMessage(err));
+            }
+          }}
+        >
+          {formError && (
+            <div
+              className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800"
+              role="alert"
+            >
+              {formError}
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
+            <input
+              className="input text-sm w-full"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <input
+              className="input text-sm w-full"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Mobile Number</label>
+            <input
+              className="input text-sm w-full"
+              type="tel"
+              placeholder="Optional"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              New Password (leave blank to keep current)
+            </label>
+            <input
+              className="input text-sm w-full"
+              type="password"
+              placeholder="Enter new password..."
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+            <select className="input text-sm w-full" value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
+              <option value="CUSTOMER">Customer (Branch)</option>
+              <option value="HEAD_OFFICE">Head Office</option>
+              <option value="FACTORY">Factory</option>
+            </select>
+          </div>
+          {role === "CUSTOMER" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Branch</label>
+              <select
+                className="input text-sm w-full"
+                value={branchId}
+                onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : "")}
+              >
+                <option value="">Select branch…</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="flex gap-2 mt-2">
+            <button type="button" className="btn-secondary flex-1 text-sm" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary flex-1 text-sm" disabled={isSubmitting}>
+              {isSubmitting ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

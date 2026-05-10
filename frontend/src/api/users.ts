@@ -12,9 +12,20 @@ export const usersApi = {
     email: string;
     password: string;
     name: string;
+    mobile_number?: string | null;
     role: UserRole;
     branch_id?: number | null;
   }) => apiClient.post<User>("/users", body).then((r) => r.data),
-  updateUser: (id: number, body: Partial<User> & { password?: string | null }) =>
-    apiClient.patch<User>(`/users/${id}`, body).then((r) => r.data),
+  updateUser: (
+    id: number,
+    body: {
+      email?: string;
+      password?: string | null;
+      name?: string;
+      mobile_number?: string | null;
+      active?: boolean;
+      role?: UserRole;
+      branch_id?: number | null;
+    },
+  ) => apiClient.patch<User>(`/users/${id}`, body).then((r) => r.data),
 };

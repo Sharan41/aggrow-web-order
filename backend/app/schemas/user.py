@@ -31,12 +31,15 @@ class UserCreate(BaseModel):
     email: FlexibleEmail
     password: str = Field(min_length=6)
     name: str
+    mobile_number: str | None = None
     role: UserRole
     branch_id: int | None = None
 
 
 class UserUpdate(BaseModel):
     name: str | None = None
+    email: FlexibleEmail | None = None
+    mobile_number: str | None = None
     role: UserRole | None = None
     branch_id: int | None = None
     active: bool | None = None
@@ -47,6 +50,7 @@ class UserRead(BaseModel):
     id: int
     email: FlexibleEmail
     name: str
+    mobile_number: str | None = None
     role: UserRole
     branch_id: int | None = None
     branch: BranchRead | None = None

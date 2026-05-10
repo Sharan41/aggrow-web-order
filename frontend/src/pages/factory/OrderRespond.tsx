@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ordersApi } from "../../api/orders";
 import { useCatalog } from "../../hooks/useCatalog";
+import { useToast } from "../../components/Toast";
 import {
   buildCellMap,
   cellKey,
@@ -15,6 +16,8 @@ export default function FactoryOrderRespond() {
   const { id } = useParams<{ id: string }>();
   const orderId = Number(id);
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const { data: catalog } = useCatalog();
   const { data: order } = useQuery({
     queryKey: ["order", orderId],
@@ -24,7 +27,6 @@ export default function FactoryOrderRespond() {
 
   const [cells, setCells] = useState<CellMap>({});
   const [note, setNote] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (order && catalog) {
@@ -51,8 +53,10 @@ export default function FactoryOrderRespond() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["order", orderId] });
       qc.invalidateQueries({ queryKey: ["orders"] });
+      showToast("Response sent successfully");
+      navigate("/factory/orders");
     },
-    onError: (err: any) => setError(err?.response?.data?.detail ?? "Failed to send"),
+    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to send response", "error"),
   });
 
   if (!order || !catalog) return <div className="text-slate-500">Loading…</div>;
@@ -65,13 +69,13 @@ export default function FactoryOrderRespond() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4 px-3 md:px-0">
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">
+          <h1 className="text-xl md:text-2xl font-semibold">
             Factory response · Order #{order.id}
           </h1>
-          <div className="mt-1 text-slate-500 text-sm flex items-center gap-2">
+          <div className="mt-1 text-slate-500 text-xs md:text-sm flex items-center gap-2 flex-wrap">
             <StatusBadge status={order.status} />
             <span>Customer: {order.customer_name}</span>
             {order.branch_name && <span>· Branch: {order.branch_name}</span>}
@@ -79,7 +83,7 @@ export default function FactoryOrderRespond() {
         </div>
         {editable && (
           <button
-            className="btn-primary"
+            className="btn-primary text-sm"
             disabled={!allAnswered || respond.isPending}
             onClick={() => respond.mutate()}
           >
@@ -88,35 +92,23 @@ export default function FactoryOrderRespond() {
         )}
       </div>
 
-      {error && <div className="text-sm text-rose-600">{error}</div>}
-
-      {(order.customer_note || order.ho_note) && (
-        <div className="card p-4 space-y-2">
-          {order.customer_note && (
-            <div>
-              <div className="text-xs uppercase text-slate-500">Customer note</div>
-              <p className="text-sm whitespace-pre-wrap">{order.customer_note}</p>
-            </div>
-          )}
-          {order.ho_note && (
-            <div className="pt-2 border-t border-slate-100">
-              <div className="text-xs uppercase text-sky-700">Head office note</div>
-              <p className="text-sm whitespace-pre-wrap">{order.ho_note}</p>
-            </div>
-          )}
+      {order.ho_note && (
+        <div className="card p-3 md:p-4">
+          <div className="text-xs uppercase text-sky-700 font-medium">Head office note</div>
+          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.ho_note}</p>
         </div>
       )}
 
-      <div className="card p-4">
-        <label className="block text-sm font-medium text-slate-700 mb-1">Factory note (overall)</label>
+      <div className="card p-3 md:p-4">
+        <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1">Factory note (overall)</label>
         {editable ? (
-          <textarea className="input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          <textarea className="input text-sm" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
         ) : (
-          <p className="text-sm whitespace-pre-wrap">{order.factory_note || "—"}</p>
+          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.factory_note || "—"}</p>
         )}
       </div>
 
-      <div className="text-sm text-slate-500">
+      <div className="text-xs md:text-sm text-slate-500">
         {editable
           ? `Respond ✓/✗ for each highlighted item. ${needsResponse.length - needsResponse.filter((i) => {
               const v = cells[cellKey(i.product_id, i.size_label)]?.factoryAvailable;

@@ -19,6 +19,7 @@ export interface User {
   id: number;
   email: string;
   name: string;
+  mobile_number: string | null;
   role: UserRole;
   branch_id: number | null;
   branch?: Branch | null;
