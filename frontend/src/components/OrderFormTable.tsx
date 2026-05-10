@@ -76,12 +76,23 @@ interface Props {
 export function OrderFormTable({ catalog, cells, onChange, mode }: Props) {
   const readOnly = mode === "view" || mode === "ho-view" || mode === "customer-view-response" || !onChange;
 
-  // For ho-view: show only rows where customer has placed an order
-  const visibleProductsHoView = useMemo(() => {
-    if (mode !== "ho-view") return null;
+  // Determine which products to show (row filtering) based on mode
+  const visibleProducts = useMemo(() => {
+    if (mode === "customer-edit" || mode === "view") return null;
     const set = new Set<number>();
     for (const [key, v] of Object.entries(cells)) {
-      if (v.customerQty > 0) {
+      let include = false;
+      if (mode === "ho-edit" || mode === "ho-view") {
+        // HO sees only rows where customer placed quantities
+        include = v.customerQty > 0;
+      } else if (mode === "factory-respond") {
+        // Factory sees only rows where HO placed quantities
+        include = v.hoQty > 0;
+      } else if (mode === "customer-view-response") {
+        // Customer sees only rows where factory responded
+        include = v.factoryAvailable !== null;
+      }
+      if (include) {
         const pid = Number(key.split("::")[0]);
         set.add(pid);
       }
@@ -89,39 +100,8 @@ export function OrderFormTable({ catalog, cells, onChange, mode }: Props) {
     return set;
   }, [cells, mode]);
 
-  const visibleSizesHoView = useMemo(() => {
-    if (mode !== "ho-view") return null;
-    const perGroup = new Map<number, Set<string>>();
-    for (const cat of catalog.categories) {
-      for (const pg of cat.packing_groups) {
-        const set = new Set<string>();
-        for (const p of pg.products) {
-          for (const pk of p.packings) {
-            if ((cells[cellKey(p.id, pk.size_label)]?.customerQty ?? 0) > 0) {
-              set.add(pk.size_label);
-            }
-          }
-        }
-        perGroup.set(pg.id, set);
-      }
-    }
-    return perGroup;
-  }, [catalog, cells, mode]);
-
-  // For factory-respond: show only rows where HO has placed an order
-  const visibleProductsFactory = useMemo(() => {
-    if (mode !== "factory-respond") return null;
-    const set = new Set<number>();
-    for (const [key, v] of Object.entries(cells)) {
-      if (v.hoQty > 0) {
-        const pid = Number(key.split("::")[0]);
-        set.add(pid);
-      }
-    }
-    return set;
-  }, [cells, mode]);
-
-  const visibleSizesFactory = useMemo(() => {
+  // Column filtering ONLY for factory-respond (compact view of HO-selected sizes)
+  const visibleSizes = useMemo(() => {
     if (mode !== "factory-respond") return null;
     const perGroup = new Map<number, Set<string>>();
     for (const cat of catalog.categories) {
@@ -140,56 +120,6 @@ export function OrderFormTable({ catalog, cells, onChange, mode }: Props) {
     return perGroup;
   }, [catalog, cells, mode]);
 
-  // For customer-view-response: show only rows where factory responded
-  const visibleProductsCustomerResponse = useMemo(() => {
-    if (mode !== "customer-view-response") return null;
-    const set = new Set<number>();
-    for (const [key, v] of Object.entries(cells)) {
-      if (v.factoryAvailable !== null) {
-        const pid = Number(key.split("::")[0]);
-        set.add(pid);
-      }
-    }
-    return set;
-  }, [cells, mode]);
-
-  const visibleSizesCustomerResponse = useMemo(() => {
-    if (mode !== "customer-view-response") return null;
-    const perGroup = new Map<number, Set<string>>();
-    for (const cat of catalog.categories) {
-      for (const pg of cat.packing_groups) {
-        const set = new Set<string>();
-        for (const p of pg.products) {
-          for (const pk of p.packings) {
-            if ((cells[cellKey(p.id, pk.size_label)]?.factoryAvailable) !== null) {
-              set.add(pk.size_label);
-            }
-          }
-        }
-        perGroup.set(pg.id, set);
-      }
-    }
-    return perGroup;
-  }, [catalog, cells, mode]);
-
-  const visibleProducts =
-    mode === "ho-view"
-      ? visibleProductsHoView
-      : mode === "factory-respond"
-      ? visibleProductsFactory
-      : mode === "customer-view-response"
-      ? visibleProductsCustomerResponse
-      : null;
-
-  const visibleSizes =
-    mode === "ho-view"
-      ? visibleSizesHoView
-      : mode === "factory-respond"
-      ? visibleSizesFactory
-      : mode === "customer-view-response"
-      ? visibleSizesCustomerResponse
-      : null;
-
   const update = (product_id: number, size: string, patch: Partial<CellState>) => {
     if (!onChange) return;
     const k = cellKey(product_id, size);
@@ -207,13 +137,18 @@ export function OrderFormTable({ catalog, cells, onChange, mode }: Props) {
     <div className="space-y-8">
       {catalog.categories.map((cat) => {
         const groups = cat.packing_groups.filter((pg) => {
+          // For factory-respond, only show groups with at least one visible column
+          if (mode === "factory-respond") {
+            const sizes = visibleSizes?.get(pg.id);
+            return sizes && sizes.size > 0;
+          }
+          // For row-filtered modes, only show groups with at least one visible product
           if (
-            mode === "factory-respond" ||
+            mode === "ho-edit" ||
             mode === "ho-view" ||
             mode === "customer-view-response"
           ) {
-            const sizes = visibleSizes?.get(pg.id);
-            return sizes && sizes.size > 0;
+            return pg.products.some((p) => visibleProducts?.has(p.id));
           }
           return true;
         });
@@ -253,20 +188,19 @@ interface GroupProps {
 }
 
 function GroupTable({ group, cells, mode, readOnly, onUpdate, visibleProducts, visibleSizes }: GroupProps) {
+  // Column filtering only for factory-respond mode
   const headers = group.column_headers.filter((h) => {
-    if (
-      mode === "factory-respond" ||
-      mode === "ho-view" ||
-      mode === "customer-view-response"
-    ) {
+    if (mode === "factory-respond") {
       return visibleSizes?.has(h);
     }
     return true;
   });
+  // Row filtering for HO modes, factory mode, and customer response mode
   const products = group.products.filter((p) => {
     if (
-      mode === "factory-respond" ||
+      mode === "ho-edit" ||
       mode === "ho-view" ||
+      mode === "factory-respond" ||
       mode === "customer-view-response"
     ) {
       return visibleProducts?.has(p.id);
