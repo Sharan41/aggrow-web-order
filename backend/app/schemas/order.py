@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field
 
 from app.models.order import OrderEventAction, OrderStatus
+from app.models.user import UserRole
 
 
 class OrderItemInput(BaseModel):
@@ -29,7 +32,7 @@ class OrderItemRead(BaseModel):
     factory_item_note: str | None
 
     @classmethod
-    def from_model(cls, item) -> "OrderItemRead":
+    def from_model(cls, item, viewer_role: UserRole | None = None) -> "OrderItemRead":
         return cls(
             id=item.id,
             product_id=item.product_id,
@@ -38,7 +41,8 @@ class OrderItemRead(BaseModel):
             customer_qty=item.customer_qty,
             ho_qty=item.ho_qty,
             factory_available=item.factory_available,
-            factory_item_note=item.factory_item_note,
+            # Customers must not see factory per-item notes
+            factory_item_note=None if viewer_role == UserRole.CUSTOMER else item.factory_item_note,
         )
 
 
@@ -101,7 +105,7 @@ class OrderDetail(BaseModel):
     events: list[OrderEventRead] = Field(default_factory=list)
 
     @classmethod
-    def from_model(cls, order) -> "OrderDetail":
+    def from_model(cls, order, viewer_role: UserRole | None = None) -> "OrderDetail":
         return cls(
             id=order.id,
             customer_id=order.customer_id,
@@ -109,14 +113,16 @@ class OrderDetail(BaseModel):
             branch_id=order.branch_id,
             branch_name=order.branch.name if order.branch else None,
             status=order.status,
-            customer_note=order.customer_note,
+            # Factory must not see the customer note
+            customer_note=None if viewer_role == UserRole.FACTORY else order.customer_note,
             ho_note=order.ho_note,
-            factory_note=order.factory_note,
+            # Customers must not see the factory overall note
+            factory_note=None if viewer_role == UserRole.CUSTOMER else order.factory_note,
             created_at=order.created_at,
             submitted_at=order.submitted_at,
             ho_forwarded_at=order.ho_forwarded_at,
             factory_responded_at=order.factory_responded_at,
-            items=[OrderItemRead.from_model(i) for i in (order.items or [])],
+            items=[OrderItemRead.from_model(i, viewer_role) for i in (order.items or [])],
             events=[OrderEventRead.model_validate(e) for e in (order.events or [])],
         )
 

@@ -67,7 +67,7 @@ def create_order(
     user: User = Depends(require_role(UserRole.CUSTOMER)),
 ) -> OrderDetail:
     order = wf.create_draft(db, user, _to_item_inputs(body.items), body.customer_note)
-    return OrderDetail.from_model(order)
+    return OrderDetail.from_model(order, viewer_role=user.role)
 
 
 @router.get("/{order_id}", response_model=OrderDetail)
@@ -90,7 +90,7 @@ def get_order(
         raise HTTPException(status_code=404, detail="Order not found")
     if not wf.can_view(order, user):
         raise HTTPException(status_code=403, detail="Forbidden")
-    return OrderDetail.from_model(order)
+    return OrderDetail.from_model(order, viewer_role=user.role)
 
 
 @router.patch("/{order_id}", response_model=OrderDetail)
@@ -102,7 +102,7 @@ def update_draft(
 ) -> OrderDetail:
     items = _to_item_inputs(body.items) if body.items is not None else None
     order = wf.update_customer_draft(db, order_id, user, items, body.customer_note)
-    return OrderDetail.from_model(order)
+    return OrderDetail.from_model(order, viewer_role=user.role)
 
 
 @router.post("/{order_id}/submit", response_model=OrderDetail)
@@ -112,7 +112,7 @@ def submit_order(
     user: User = Depends(require_role(UserRole.CUSTOMER)),
 ) -> OrderDetail:
     order = wf.submit_to_ho(db, order_id, user)
-    return OrderDetail.from_model(order)
+    return OrderDetail.from_model(order, viewer_role=user.role)
 
 
 @router.patch("/{order_id}/ho", response_model=OrderDetail)
@@ -124,7 +124,7 @@ def ho_edit_order(
 ) -> OrderDetail:
     items = _to_item_inputs(body.items) if body.items is not None else None
     order = wf.ho_edit(db, order_id, user, items, body.ho_note)
-    return OrderDetail.from_model(order)
+    return OrderDetail.from_model(order, viewer_role=user.role)
 
 
 @router.post("/{order_id}/forward", response_model=OrderDetail)
@@ -134,7 +134,7 @@ def forward_order(
     user: User = Depends(require_role(UserRole.HEAD_OFFICE)),
 ) -> OrderDetail:
     order = wf.ho_forward(db, order_id, user)
-    return OrderDetail.from_model(order)
+    return OrderDetail.from_model(order, viewer_role=user.role)
 
 
 @router.post("/{order_id}/reject", response_model=OrderDetail)
@@ -145,7 +145,7 @@ def reject_order(
     user: User = Depends(require_role(UserRole.HEAD_OFFICE)),
 ) -> OrderDetail:
     order = wf.ho_reject(db, order_id, user, body.reason)
-    return OrderDetail.from_model(order)
+    return OrderDetail.from_model(order, viewer_role=user.role)
 
 
 @router.post("/{order_id}/respond", response_model=OrderDetail)
@@ -165,4 +165,4 @@ def factory_respond_order(
         for i in body.items
     ]
     order = wf.factory_respond(db, order_id, user, items, body.factory_note)
-    return OrderDetail.from_model(order)
+    return OrderDetail.from_model(order, viewer_role=user.role)
