@@ -141,10 +141,10 @@ export default function HoOrderEdit() {
         )}
       </div>
 
-      {order.factory_note && (
+      {(order.status === "COMPLETED" || order.status === "FACTORY_RESPONDED") && (
         <div className="card p-3 md:p-4 border-l-4 border-emerald-500">
           <div className="text-xs uppercase text-emerald-700 font-medium mb-1">Factory note</div>
-          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.factory_note}</p>
+          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.factory_note || "—"}</p>
         </div>
       )}
 
