@@ -115,8 +115,8 @@ class OrderDetail(BaseModel):
             status=order.status,
             # Factory must not see the customer note
             customer_note=None if viewer_role == UserRole.FACTORY else order.customer_note,
-            ho_note=order.ho_note,
-            # Customers must not see the factory overall note
+            # Customers must not see HO-internal or factory notes
+            ho_note=None if viewer_role == UserRole.CUSTOMER else order.ho_note,
             factory_note=None if viewer_role == UserRole.CUSTOMER else order.factory_note,
             created_at=order.created_at,
             submitted_at=order.submitted_at,
