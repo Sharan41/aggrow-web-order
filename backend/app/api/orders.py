@@ -166,3 +166,21 @@ def factory_respond_order(
     ]
     order = wf.factory_respond(db, order_id, user, items, body.factory_note)
     return OrderDetail.from_model(order, viewer_role=user.role)
+
+
+@router.delete("/{order_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role(UserRole.HEAD_OFFICE)),
+) -> None:
+    order = db.execute(select(Order).where(Order.id == order_id)).scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.status != OrderStatus.COMPLETED:
+        raise HTTPException(
+            status_code=400,
+            detail="Only COMPLETED orders can be deleted",
+        )
+    db.delete(order)
+    db.commit()

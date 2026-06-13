@@ -38,4 +38,5 @@ export const ordersApi = {
     id: number,
     body: { items: FactoryItemInput[]; factory_note?: string | null },
   ) => apiClient.post<OrderDetail>(`/orders/${id}/respond`, body).then((r) => r.data),
+  delete: (id: number) => apiClient.delete(`/orders/${id}`).then((r) => r.data),
 };

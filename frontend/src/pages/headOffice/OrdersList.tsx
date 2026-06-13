@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { ordersApi } from "../../api/orders";
 import { StatusBadge } from "../../components/StatusBadge";
+import { useToast } from "../../components/Toast";
 import type { OrderStatus, OrderSummary } from "../../types";
 
 interface Props {
@@ -23,10 +24,28 @@ const STATUS_OPTIONS: (OrderStatus | "")[] = [
 export function OrdersList({ defaultStatus, title, filter }: Props) {
   const [status, setStatus] = useState<OrderStatus | "">(defaultStatus ?? "");
   const [search, setSearch] = useState("");
+  const qc = useQueryClient();
+  const { showToast } = useToast();
   const { data, isLoading } = useQuery({
     queryKey: ["orders", "ho", status],
     queryFn: () => ordersApi.list(status ? { status: status as OrderStatus } : undefined),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (orderId: number) => ordersApi.delete(orderId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      qc.invalidateQueries({ queryKey: ["kpis"] });
+      showToast("Order deleted successfully");
+    },
+    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to delete order", "error"),
+  });
+
+  const handleDelete = (order: OrderSummary) => {
+    if (window.confirm(`Are you sure you want to delete order #${order.id}? This action cannot be undone.`)) {
+      deleteMutation.mutate(order.id);
+    }
+  };
 
   const rows = (data ?? []).filter((o) => {
     if (filter && !filter(o)) return false;
@@ -100,9 +119,21 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
                     {o.factory_responded_at ? new Date(o.factory_responded_at).toLocaleString() : "—"}
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <Link to={`/ho/orders/${o.id}`} className="text-brand-700 hover:underline">
-                      Open
-                    </Link>
+                    <div className="flex gap-2 justify-end items-center">
+                      <Link to={`/ho/orders/${o.id}`} className="text-brand-700 hover:underline">
+                        Open
+                      </Link>
+                      {o.status === "COMPLETED" && (
+                        <button
+                          onClick={() => handleDelete(o)}
+                          disabled={deleteMutation.isPending}
+                          className="text-red-600 hover:text-red-800 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete order"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

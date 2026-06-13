@@ -83,9 +83,27 @@ export default function HoOrderEdit() {
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to reject", "error"),
   });
 
+  const deleteOrder = useMutation({
+    mutationFn: () => ordersApi.delete(orderId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      qc.invalidateQueries({ queryKey: ["kpis"] });
+      showToast("Order deleted successfully");
+      navigate("/ho/orders");
+    },
+    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to delete order", "error"),
+  });
+
   if (!order || !catalog) return <div className="text-slate-500">Loading…</div>;
 
   const editable = order.status === "SUBMITTED_TO_HO";
+  const canDelete = order.status === "COMPLETED";
+
+  const handleDelete = () => {
+    if (window.confirm(`Are you sure you want to delete order #${order.id}? This action cannot be undone.`)) {
+      deleteOrder.mutate();
+    }
+  };
 
   return (
     <div className="space-y-3 md:space-y-4 px-3 md:px-0">
@@ -99,30 +117,41 @@ export default function HoOrderEdit() {
             {order.branch_name && <span>Branch: {order.branch_name}</span>}
           </div>
         </div>
-        {editable && (
-          <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
+          {editable && (
+            <>
+              <button
+                className="btn-danger text-sm"
+                disabled={reject.isPending}
+                onClick={() => {
+                  const reason = window.prompt("Rejection reason (optional):") ?? "";
+                  if (reason !== null) reject.mutate(reason);
+                }}
+              >
+                Reject
+              </button>
+              <button className="btn-secondary text-sm" disabled={save.isPending} onClick={() => save.mutate()}>
+                Save Edits
+              </button>
+              <button
+                className="btn-primary text-sm"
+                disabled={forward.isPending}
+                onClick={() => forward.mutate()}
+              >
+                Save & Forward to Factory
+              </button>
+            </>
+          )}
+          {canDelete && (
             <button
               className="btn-danger text-sm"
-              disabled={reject.isPending}
-              onClick={() => {
-                const reason = window.prompt("Rejection reason (optional):") ?? "";
-                if (reason !== null) reject.mutate(reason);
-              }}
+              disabled={deleteOrder.isPending}
+              onClick={handleDelete}
             >
-              Reject
+              Delete Order
             </button>
-            <button className="btn-secondary text-sm" disabled={save.isPending} onClick={() => save.mutate()}>
-              Save Edits
-            </button>
-            <button
-              className="btn-primary text-sm"
-              disabled={forward.isPending}
-              onClick={() => forward.mutate()}
-            >
-              Save & Forward to Factory
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {order.customer_note && (
