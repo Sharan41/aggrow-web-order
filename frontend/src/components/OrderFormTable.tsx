@@ -13,6 +13,8 @@ interface CellState {
 
 export type CellMap = Record<string, CellState>;
 
+export type RemarksMap = Record<number, string>;
+
 export const cellKey = (productId: number, size: string) => `${productId}::${size}`;
 
 export function buildCellMap(catalog: Catalog | null, items: OrderItem[]): CellMap {
@@ -54,6 +56,42 @@ export function buildCellMap(catalog: Catalog | null, items: OrderItem[]): CellM
   return map;
 }
 
+export function buildRemarksMap(
+  catalog: Catalog | null,
+  remarks: { product_id: number; remarks: string | null }[],
+): RemarksMap {
+  const map: RemarksMap = {};
+  if (catalog) {
+    for (const cat of catalog.categories) {
+      for (const pg of cat.packing_groups) {
+        for (const p of pg.products) {
+          map[p.id] = "";
+        }
+      }
+    }
+  }
+  for (const r of remarks) {
+    map[r.product_id] = r.remarks ?? "";
+  }
+  return map;
+}
+
+export function remarksMapToInput(
+  map: RemarksMap,
+  existing: { product_id: number }[] = [],
+): { product_id: number; remarks: string | null }[] {
+  const existingIds = new Set(existing.map((r) => r.product_id));
+  const out: { product_id: number; remarks: string | null }[] = [];
+  for (const [pid, remarks] of Object.entries(map)) {
+    const trimmed = remarks.trim();
+    const productId = Number(pid);
+    if (trimmed || existingIds.has(productId)) {
+      out.push({ product_id: productId, remarks: trimmed || null });
+    }
+  }
+  return out;
+}
+
 export function cellsToItems(map: CellMap, which: "customer" | "ho"): { product_id: number; size_label: string; qty: number }[] {
   const out: { product_id: number; size_label: string; qty: number }[] = [];
   for (const [key, v] of Object.entries(map)) {
@@ -69,12 +107,17 @@ export function cellsToItems(map: CellMap, which: "customer" | "ho"): { product_
 interface Props {
   catalog: Catalog;
   cells: CellMap;
+  remarks?: RemarksMap;
+  onRemarksChange?: (next: RemarksMap) => void;
   onChange?: (next: CellMap) => void;
   mode: FormMode;
 }
 
-export function OrderFormTable({ catalog, cells, onChange, mode }: Props) {
+export function OrderFormTable({ catalog, cells, remarks = {}, onRemarksChange, onChange, mode }: Props) {
   const readOnly = mode === "view" || mode === "ho-view" || mode === "customer-view-response" || !onChange;
+  const showRemarks = mode !== "factory-respond";
+  const remarksEditable =
+    (mode === "customer-edit" || mode === "ho-edit") && !!onRemarksChange;
 
   // Determine which products to show (row filtering) based on mode
   const visibleProducts = useMemo(() => {
@@ -133,6 +176,11 @@ export function OrderFormTable({ catalog, cells, onChange, mode }: Props) {
     onChange({ ...cells, [k]: { ...prev, ...patch } });
   };
 
+  const updateRemarks = (productId: number, value: string) => {
+    if (!onRemarksChange) return;
+    onRemarksChange({ ...remarks, [productId]: value });
+  };
+
   return (
     <div className="space-y-8">
       {catalog.categories.map((cat) => {
@@ -162,9 +210,13 @@ export function OrderFormTable({ catalog, cells, onChange, mode }: Props) {
                   key={pg.id}
                   group={pg}
                   cells={cells}
+                  remarks={remarks}
                   mode={mode}
                   readOnly={readOnly}
+                  showRemarks={showRemarks}
+                  remarksEditable={remarksEditable}
                   onUpdate={update}
+                  onRemarksUpdate={updateRemarks}
                   visibleProducts={visibleProducts}
                   visibleSizes={visibleSizes?.get(pg.id)}
                 />
@@ -180,14 +232,30 @@ export function OrderFormTable({ catalog, cells, onChange, mode }: Props) {
 interface GroupProps {
   group: PackingGroup;
   cells: CellMap;
+  remarks: RemarksMap;
   mode: FormMode;
   readOnly: boolean;
+  showRemarks: boolean;
+  remarksEditable: boolean;
   onUpdate: (productId: number, size: string, patch: Partial<CellState>) => void;
+  onRemarksUpdate: (productId: number, value: string) => void;
   visibleProducts: Set<number> | null;
   visibleSizes: Set<string> | undefined;
 }
 
-function GroupTable({ group, cells, mode, readOnly, onUpdate, visibleProducts, visibleSizes }: GroupProps) {
+function GroupTable({
+  group,
+  cells,
+  remarks,
+  mode,
+  readOnly,
+  showRemarks,
+  remarksEditable,
+  onUpdate,
+  onRemarksUpdate,
+  visibleProducts,
+  visibleSizes,
+}: GroupProps) {
   // Column filtering only for factory-respond mode
   const headers = group.column_headers.filter((h) => {
     if (mode === "factory-respond") {
@@ -211,7 +279,9 @@ function GroupTable({ group, cells, mode, readOnly, onUpdate, visibleProducts, v
 
   return (
     <div>
-      <h3 className="text-xs md:text-sm font-medium text-slate-600 mb-2">{group.label}</h3>
+      <h3 className="text-xs md:text-sm font-medium text-slate-600 mb-2">
+        {group.label} (All in cases)
+      </h3>
       <div className="overflow-auto">
         <table className="min-w-full border-collapse text-xs md:text-sm">
           <thead>
@@ -224,6 +294,11 @@ function GroupTable({ group, cells, mode, readOnly, onUpdate, visibleProducts, v
                   {h}
                 </th>
               ))}
+              {showRemarks && (
+                <th className="border px-1 md:px-2 py-1 text-left min-w-[200px] md:min-w-[280px]">
+                  Remarks
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -233,9 +308,13 @@ function GroupTable({ group, cells, mode, readOnly, onUpdate, visibleProducts, v
                 product={p}
                 headers={headers}
                 cells={cells}
+                remarks={remarks[p.id] ?? ""}
                 mode={mode}
                 readOnly={readOnly}
+                showRemarks={showRemarks}
+                remarksEditable={remarksEditable}
                 onUpdate={onUpdate}
+                onRemarksUpdate={onRemarksUpdate}
               />
             ))}
           </tbody>
@@ -249,12 +328,27 @@ interface RowProps {
   product: Product;
   headers: string[];
   cells: CellMap;
+  remarks: string;
   mode: FormMode;
   readOnly: boolean;
+  showRemarks: boolean;
+  remarksEditable: boolean;
   onUpdate: (productId: number, size: string, patch: Partial<CellState>) => void;
+  onRemarksUpdate: (productId: number, value: string) => void;
 }
 
-function ProductRow({ product, headers, cells, mode, readOnly, onUpdate }: RowProps) {
+function ProductRow({
+  product,
+  headers,
+  cells,
+  remarks,
+  mode,
+  readOnly,
+  showRemarks,
+  remarksEditable,
+  onUpdate,
+  onRemarksUpdate,
+}: RowProps) {
   const availableSet = new Set(product.packings.filter((p) => p.available).map((p) => p.size_label));
 
   return (
@@ -279,6 +373,24 @@ function ProductRow({ product, headers, cells, mode, readOnly, onUpdate }: RowPr
           </td>
         );
       })}
+      {showRemarks && (
+        <td className="border px-1 md:px-2 py-1 align-top">
+          {remarksEditable ? (
+            <input
+              type="text"
+              maxLength={255}
+              className="w-full min-w-[200px] rounded border border-slate-300 bg-white px-2 py-1 text-xs md:text-sm focus:ring-1 focus:ring-brand-500"
+              value={remarks}
+              onChange={(e) => onRemarksUpdate(product.id, e.target.value)}
+              placeholder="Remarks (up to 255 chars)"
+            />
+          ) : remarks ? (
+            <div className="text-xs md:text-sm text-slate-700 whitespace-pre-wrap break-words">{remarks}</div>
+          ) : (
+            <span className="text-slate-300">—</span>
+          )}
+        </td>
+      )}
     </tr>
   );
 }

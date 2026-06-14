@@ -12,6 +12,7 @@ from app.models import (
     Order,
     OrderEvent,
     OrderItem,
+    OrderProductRemark,
     OrderStatus,
     Product,
     ProductPacking,
@@ -35,6 +36,12 @@ class FactoryItemInput:
     size_label: str
     available: bool
     note: str | None = None
+
+
+@dataclass
+class ProductRemarkInput:
+    product_id: int
+    remarks: str | None = None
 
 
 # --- helpers ---
@@ -65,6 +72,7 @@ def _load_order(db: Session, order_id: int) -> Order:
         select(Order)
         .options(
             selectinload(Order.items).selectinload(OrderItem.product),
+            selectinload(Order.product_remarks),
             selectinload(Order.customer),
             selectinload(Order.branch),
         )
@@ -90,6 +98,31 @@ def _assert_packing_available(db: Session, product_id: int, size_label: str) -> 
         )
 
 
+def _apply_product_remarks(db: Session, order: Order, remarks: list[ProductRemarkInput]) -> None:
+    existing = {r.product_id: r for r in order.product_remarks}
+    incoming_ids = set()
+    for r in remarks:
+        text = (r.remarks or "").strip() or None
+        incoming_ids.add(r.product_id)
+        if r.product_id in existing:
+            if text:
+                existing[r.product_id].remarks = text
+            else:
+                db.delete(existing[r.product_id])
+        elif text:
+            db.add(
+                OrderProductRemark(
+                    order_id=order.id,
+                    product_id=r.product_id,
+                    remarks=text,
+                )
+            )
+    for pid, row in list(existing.items()):
+        if pid not in incoming_ids:
+            db.delete(row)
+    db.flush()
+
+
 # --- customer draft/submit ---
 
 def create_draft(
@@ -97,6 +130,7 @@ def create_draft(
     customer: User,
     items: list[ItemInput],
     customer_note: str | None,
+    product_remarks: list[ProductRemarkInput] | None = None,
 ) -> Order:
     if customer.role != UserRole.CUSTOMER:
         raise HTTPException(status_code=403, detail="Only customers can create orders")
@@ -109,6 +143,8 @@ def create_draft(
     db.add(order)
     db.flush()
     _apply_customer_items(db, order, items)
+    if product_remarks:
+        _apply_product_remarks(db, order, product_remarks)
     _record_event(db, order, customer, OrderEventAction.CREATED)
     db.commit()
     return _load_order(db, order.id)
@@ -138,6 +174,7 @@ def update_customer_draft(
     customer: User,
     items: list[ItemInput] | None,
     customer_note: str | None,
+    product_remarks: list[ProductRemarkInput] | None = None,
 ) -> Order:
     order = _load_order(db, order_id)
     if order.customer_id != customer.id:
@@ -148,6 +185,8 @@ def update_customer_draft(
         order.customer_note = customer_note
     if items is not None:
         _apply_customer_items(db, order, items)
+    if product_remarks is not None:
+        _apply_product_remarks(db, order, product_remarks)
     db.commit()
     return _load_order(db, order.id)
 
@@ -176,6 +215,7 @@ def ho_edit(
     actor: User,
     items: list[ItemInput] | None,
     ho_note: str | None,
+    product_remarks: list[ProductRemarkInput] | None = None,
 ) -> Order:
     if actor.role != UserRole.HEAD_OFFICE:
         raise HTTPException(status_code=403, detail="Head office only")
@@ -207,6 +247,8 @@ def ho_edit(
                     )
                 )
         db.flush()
+    if product_remarks is not None:
+        _apply_product_remarks(db, order, product_remarks)
     _record_event(db, order, actor, OrderEventAction.HO_EDITED)
     db.commit()
     return _load_order(db, order.id)

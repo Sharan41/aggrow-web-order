@@ -53,6 +53,9 @@ class Order(Base):
     customer: Mapped["User"] = relationship(back_populates="orders", foreign_keys=[customer_id])  # noqa: F821
     branch: Mapped["Branch | None"] = relationship(back_populates="orders")  # noqa: F821
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+    product_remarks: Mapped[list["OrderProductRemark"]] = relationship(
+        back_populates="order", cascade="all, delete-orphan"
+    )
     events: Mapped[list["OrderEvent"]] = relationship(
         back_populates="order", cascade="all, delete-orphan", order_by="OrderEvent.created_at"
     )
@@ -73,6 +76,19 @@ class OrderItem(Base):
     factory_item_note: Mapped[str | None] = mapped_column(String(1024), nullable=True)
 
     order: Mapped[Order] = relationship(back_populates="items")
+    product: Mapped["Product"] = relationship()  # noqa: F821
+
+
+class OrderProductRemark(Base):
+    __tablename__ = "order_product_remarks"
+    __table_args__ = (UniqueConstraint("order_id", "product_id", name="uq_order_product_remark"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"), nullable=False)
+    remarks: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    order: Mapped[Order] = relationship(back_populates="product_remarks")
     product: Mapped["Product"] = relationship()  # noqa: F821
 
 

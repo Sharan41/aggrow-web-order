@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   buildCellMap,
+  buildRemarksMap,
   cellsToItems,
+  remarksMapToInput,
   OrderFormTable,
   type CellMap,
+  type RemarksMap,
 } from "../../components/OrderFormTable";
 import { useCatalog } from "../../hooks/useCatalog";
 import { ordersApi } from "../../api/orders";
@@ -12,13 +15,17 @@ import { ordersApi } from "../../api/orders";
 export default function NewOrder() {
   const { data: catalog, isLoading } = useCatalog();
   const [cells, setCells] = useState<CellMap>({});
+  const [remarks, setRemarks] = useState<RemarksMap>({});
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (catalog) setCells(buildCellMap(catalog, []));
+    if (catalog) {
+      setCells(buildCellMap(catalog, []));
+      setRemarks(buildRemarksMap(catalog, []));
+    }
   }, [catalog]);
 
   const totalQty = Object.values(cells).reduce((s, c) => s + (c.customerQty || 0), 0);
@@ -28,7 +35,11 @@ export default function NewOrder() {
     setSaving(true);
     try {
       const items = cellsToItems(cells, "customer");
-      const order = await ordersApi.create({ items, customer_note: note || null });
+      const order = await ordersApi.create({
+        items,
+        customer_note: note || null,
+        product_remarks: remarksMapToInput(remarks),
+      });
       navigate(`/customer/orders/${order.id}`);
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? "Failed to save");
@@ -43,7 +54,11 @@ export default function NewOrder() {
     try {
       const items = cellsToItems(cells, "customer");
       if (items.length === 0) throw new Error("Add at least one quantity");
-      const order = await ordersApi.create({ items, customer_note: note || null });
+      const order = await ordersApi.create({
+        items,
+        customer_note: note || null,
+        product_remarks: remarksMapToInput(remarks),
+      });
       await ordersApi.submit(order.id);
       navigate(`/customer/orders/${order.id}`);
     } catch (err: any) {
@@ -87,7 +102,14 @@ export default function NewOrder() {
         />
       </div>
 
-      <OrderFormTable catalog={catalog} cells={cells} onChange={setCells} mode="customer-edit" />
+      <OrderFormTable
+        catalog={catalog}
+        cells={cells}
+        remarks={remarks}
+        onChange={setCells}
+        onRemarksChange={setRemarks}
+        mode="customer-edit"
+      />
     </div>
   );
 }

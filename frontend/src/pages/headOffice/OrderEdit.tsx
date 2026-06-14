@@ -6,9 +6,12 @@ import { useCatalog } from "../../hooks/useCatalog";
 import { useToast } from "../../components/Toast";
 import {
   buildCellMap,
+  buildRemarksMap,
   cellsToItems,
+  remarksMapToInput,
   OrderFormTable,
   type CellMap,
+  type RemarksMap,
 } from "../../components/OrderFormTable";
 import { StatusBadge } from "../../components/StatusBadge";
 
@@ -25,6 +28,7 @@ export default function HoOrderEdit() {
     enabled: !!orderId,
   });
   const [cells, setCells] = useState<CellMap>({});
+  const [remarks, setRemarks] = useState<RemarksMap>({});
   const [note, setNote] = useState("");
 
   useEffect(() => {
@@ -38,6 +42,7 @@ export default function HoOrderEdit() {
           })),
         ),
       );
+      setRemarks(buildRemarksMap(catalog, order.product_remarks ?? []));
       setNote(order.ho_note ?? "");
     }
   }, [order, catalog]);
@@ -47,6 +52,7 @@ export default function HoOrderEdit() {
       ordersApi.hoEdit(orderId, {
         items: cellsToItems(cells, "ho"),
         ho_note: note || null,
+        product_remarks: remarksMapToInput(remarks, order?.product_remarks),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["order", orderId] });
@@ -60,6 +66,7 @@ export default function HoOrderEdit() {
       await ordersApi.hoEdit(orderId, {
         items: cellsToItems(cells, "ho"),
         ho_note: note || null,
+        product_remarks: remarksMapToInput(remarks, order?.product_remarks),
       });
       return ordersApi.forward(orderId);
     },
@@ -180,7 +187,9 @@ export default function HoOrderEdit() {
       <OrderFormTable
         catalog={catalog}
         cells={cells}
+        remarks={remarks}
         onChange={editable ? setCells : undefined}
+        onRemarksChange={editable ? setRemarks : undefined}
         mode={editable ? "ho-edit" : "ho-view"}
       />
     </div>

@@ -14,6 +14,11 @@ export interface FactoryItemInput {
   note?: string | null;
 }
 
+export interface ProductRemarkInput {
+  product_id: number;
+  remarks?: string | null;
+}
+
 export const ordersApi = {
   list: (filters?: { status?: OrderStatus; branch_id?: number; customer_id?: number }) =>
     apiClient
@@ -21,14 +26,14 @@ export const ordersApi = {
       .then((r) => r.data),
   kpis: () => apiClient.get<DashboardKPI>("/orders/kpis").then((r) => r.data),
   get: (id: number) => apiClient.get<OrderDetail>(`/orders/${id}`).then((r) => r.data),
-  create: (body: { items: ItemInput[]; customer_note?: string | null }) =>
+  create: (body: { items: ItemInput[]; customer_note?: string | null; product_remarks?: ProductRemarkInput[] }) =>
     apiClient.post<OrderDetail>("/orders", body).then((r) => r.data),
   updateDraft: (
     id: number,
-    body: { items?: ItemInput[]; customer_note?: string | null },
+    body: { items?: ItemInput[]; customer_note?: string | null; product_remarks?: ProductRemarkInput[] },
   ) => apiClient.patch<OrderDetail>(`/orders/${id}`, body).then((r) => r.data),
   submit: (id: number) => apiClient.post<OrderDetail>(`/orders/${id}/submit`).then((r) => r.data),
-  hoEdit: (id: number, body: { items?: ItemInput[]; ho_note?: string | null }) =>
+  hoEdit: (id: number, body: { items?: ItemInput[]; ho_note?: string | null; product_remarks?: ProductRemarkInput[] }) =>
     apiClient.patch<OrderDetail>(`/orders/${id}/ho`, body).then((r) => r.data),
   forward: (id: number) =>
     apiClient.post<OrderDetail>(`/orders/${id}/forward`).then((r) => r.data),

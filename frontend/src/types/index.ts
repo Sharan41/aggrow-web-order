@@ -60,6 +60,11 @@ export interface Catalog {
   categories: Category[];
 }
 
+export interface ProductRemark {
+  product_id: number;
+  remarks: string | null;
+}
+
 export interface OrderItem {
   id: number;
   product_id: number;
@@ -108,6 +113,7 @@ export interface OrderDetail {
   ho_forwarded_at: string | null;
   factory_responded_at: string | null;
   items: OrderItem[];
+  product_remarks: ProductRemark[];
   events: OrderEvent[];
 }
 

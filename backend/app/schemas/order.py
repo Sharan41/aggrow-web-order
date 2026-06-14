@@ -14,11 +14,21 @@ class OrderItemInput(BaseModel):
     qty: int = Field(ge=0)
 
 
+class ProductRemarkInput(BaseModel):
+    product_id: int
+    remarks: str | None = Field(default=None, max_length=255)
+
+
 class FactoryItemInput(BaseModel):
     product_id: int
     size_label: str
     available: bool
     note: str | None = None
+
+
+class ProductRemarkRead(BaseModel):
+    product_id: int
+    remarks: str | None
 
 
 class OrderItemRead(BaseModel):
@@ -102,6 +112,7 @@ class OrderDetail(BaseModel):
     ho_forwarded_at: datetime | None
     factory_responded_at: datetime | None
     items: list[OrderItemRead]
+    product_remarks: list[ProductRemarkRead] = Field(default_factory=list)
     events: list[OrderEventRead] = Field(default_factory=list)
 
     @classmethod
@@ -123,6 +134,15 @@ class OrderDetail(BaseModel):
             ho_forwarded_at=order.ho_forwarded_at,
             factory_responded_at=order.factory_responded_at,
             items=[OrderItemRead.from_model(i, viewer_role) for i in (order.items or [])],
+            # Factory must not see per-product remarks
+            product_remarks=(
+                []
+                if viewer_role == UserRole.FACTORY
+                else [
+                    ProductRemarkRead(product_id=r.product_id, remarks=r.remarks)
+                    for r in (order.product_remarks or [])
+                ]
+            ),
             events=[OrderEventRead.model_validate(e) for e in (order.events or [])],
         )
 
@@ -130,16 +150,19 @@ class OrderDetail(BaseModel):
 class CreateOrderBody(BaseModel):
     items: list[OrderItemInput] = Field(default_factory=list)
     customer_note: str | None = None
+    product_remarks: list[ProductRemarkInput] = Field(default_factory=list)
 
 
 class UpdateDraftBody(BaseModel):
     items: list[OrderItemInput] | None = None
     customer_note: str | None = None
+    product_remarks: list[ProductRemarkInput] | None = None
 
 
 class HoEditBody(BaseModel):
     items: list[OrderItemInput] | None = None
     ho_note: str | None = None
+    product_remarks: list[ProductRemarkInput] | None = None
 
 
 class HoRejectBody(BaseModel):

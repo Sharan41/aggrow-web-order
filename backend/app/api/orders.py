@@ -24,6 +24,10 @@ def _to_item_inputs(items):
     return [wf.ItemInput(product_id=i.product_id, size_label=i.size_label, qty=i.qty) for i in items]
 
 
+def _to_remark_inputs(remarks):
+    return [wf.ProductRemarkInput(product_id=r.product_id, remarks=r.remarks) for r in remarks]
+
+
 @router.get("", response_model=list[OrderSummary])
 def list_orders(
     status_filter: OrderStatus | None = Query(default=None, alias="status"),
@@ -66,7 +70,9 @@ def create_order(
     db: Session = Depends(get_db),
     user: User = Depends(require_role(UserRole.CUSTOMER)),
 ) -> OrderDetail:
-    order = wf.create_draft(db, user, _to_item_inputs(body.items), body.customer_note)
+    order = wf.create_draft(
+        db, user, _to_item_inputs(body.items), body.customer_note, _to_remark_inputs(body.product_remarks)
+    )
     return OrderDetail.from_model(order, viewer_role=user.role)
 
 
@@ -80,6 +86,7 @@ def get_order(
         select(Order)
         .options(
             selectinload(Order.items).selectinload(OrderItem.product).selectinload(Product.packing_group),
+            selectinload(Order.product_remarks),
             selectinload(Order.events),
             selectinload(Order.customer),
             selectinload(Order.branch),
@@ -101,7 +108,8 @@ def update_draft(
     user: User = Depends(require_role(UserRole.CUSTOMER)),
 ) -> OrderDetail:
     items = _to_item_inputs(body.items) if body.items is not None else None
-    order = wf.update_customer_draft(db, order_id, user, items, body.customer_note)
+    remarks = _to_remark_inputs(body.product_remarks) if body.product_remarks is not None else None
+    order = wf.update_customer_draft(db, order_id, user, items, body.customer_note, remarks)
     return OrderDetail.from_model(order, viewer_role=user.role)
 
 
@@ -123,7 +131,8 @@ def ho_edit_order(
     user: User = Depends(require_role(UserRole.HEAD_OFFICE)),
 ) -> OrderDetail:
     items = _to_item_inputs(body.items) if body.items is not None else None
-    order = wf.ho_edit(db, order_id, user, items, body.ho_note)
+    remarks = _to_remark_inputs(body.product_remarks) if body.product_remarks is not None else None
+    order = wf.ho_edit(db, order_id, user, items, body.ho_note, remarks)
     return OrderDetail.from_model(order, viewer_role=user.role)
 
 

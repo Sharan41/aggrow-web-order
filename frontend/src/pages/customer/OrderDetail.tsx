@@ -6,9 +6,12 @@ import { useCatalog } from "../../hooks/useCatalog";
 import { useToast } from "../../components/Toast";
 import {
   buildCellMap,
+  buildRemarksMap,
   cellsToItems,
+  remarksMapToInput,
   OrderFormTable,
   type CellMap,
+  type RemarksMap,
 } from "../../components/OrderFormTable";
 import { StatusBadge } from "../../components/StatusBadge";
 
@@ -25,11 +28,13 @@ export default function CustomerOrderDetail() {
   });
 
   const [cells, setCells] = useState<CellMap>({});
+  const [remarks, setRemarks] = useState<RemarksMap>({});
   const [note, setNote] = useState("");
 
   useEffect(() => {
     if (order && catalog) {
       setCells(buildCellMap(catalog, order.items));
+      setRemarks(buildRemarksMap(catalog, order.product_remarks ?? []));
       setNote(order.customer_note ?? "");
     }
   }, [order, catalog]);
@@ -39,6 +44,7 @@ export default function CustomerOrderDetail() {
       ordersApi.updateDraft(orderId, {
         items: cellsToItems(cells, "customer"),
         customer_note: note || null,
+        product_remarks: remarksMapToInput(remarks, order?.product_remarks),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["order", orderId] });
@@ -52,6 +58,7 @@ export default function CustomerOrderDetail() {
       await ordersApi.updateDraft(orderId, {
         items: cellsToItems(cells, "customer"),
         customer_note: note || null,
+        product_remarks: remarksMapToInput(remarks, order?.product_remarks),
       });
       return ordersApi.submit(orderId);
     },
@@ -121,7 +128,9 @@ export default function CustomerOrderDetail() {
       <OrderFormTable
         catalog={catalog}
         cells={cells}
+        remarks={remarks}
         onChange={isDraft ? setCells : undefined}
+        onRemarksChange={isDraft ? setRemarks : undefined}
         mode={mode}
       />
     </div>
