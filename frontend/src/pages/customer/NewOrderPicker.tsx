@@ -22,8 +22,8 @@ export default function NewOrderPicker() {
               <div className="font-semibold text-brand-700">{FORM_TYPE_LABELS[type]}</div>
               <div className="text-xs text-slate-500 mt-1">
                 {type === "AG_GROW"
-                  ? "Standard AG GROW product list and sizes"
-                  : "Sulfag (SP) product list — same order workflow"}
+                  ? "AG GROW product list and sizes"
+                  : "Sulfag (SP) product list"}
               </div>
             </Link>
           ))}

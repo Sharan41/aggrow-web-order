@@ -25,6 +25,8 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://aggrow:aggrow@db:5432/aggrow
       FRONTEND_ORIGIN: http://localhost:5173
+      CATALOG_EXCEL_PATH: /app/AG - ORDER FORM excel.xlsx
+      SULFAG_CATALOG_EXCEL_PATH: /app/2026.05 PRODUCTS LIST (SP).xlsx
     depends_on:
       db:
         condition: service_healthy
@@ -33,7 +35,8 @@ services:
     volumes:
       - ./backend:/app
       - "./AG - ORDER FORM excel.xlsx:/app/AG - ORDER FORM excel.xlsx:ro"
-    command: bash -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+      - "./2026.05 PRODUCTS LIST (SP).xlsx:/app/2026.05 PRODUCTS LIST (SP).xlsx:ro"
+    command: bash -c "alembic upgrade head && python -m app.db.seed --all && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   frontend:
     image: node:20-alpine

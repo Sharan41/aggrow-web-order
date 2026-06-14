@@ -17,7 +17,7 @@ import { FORM_TYPE_LABELS, parseFormTypeParam } from "../../lib/orderFormType";
 export default function NewOrder() {
   const { formType: formTypeParam } = useParams<{ formType: string }>();
   const orderFormType = parseFormTypeParam(formTypeParam);
-  const { data: catalog, isLoading } = useCatalog(orderFormType ?? "AG_GROW");
+  const { data: catalog, isLoading, isError } = useCatalog(orderFormType ?? "AG_GROW");
   const [cells, setCells] = useState<CellMap>({});
   const [remarks, setRemarks] = useState<RemarksMap>({});
   const [note, setNote] = useState("");
@@ -76,7 +76,30 @@ export default function NewOrder() {
     }
   };
 
-  if (isLoading || !catalog) return <div className="text-slate-500">Loading catalog…</div>;
+  if (isLoading) return <div className="text-slate-500">Loading catalog…</div>;
+  if (isError || !catalog) {
+    return <div className="text-rose-600">Could not load product list. Please try again.</div>;
+  }
+  if (catalog.categories.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-2xl font-semibold">New Order</h1>
+          <FormTypeBadge type={orderFormType} />
+        </div>
+        <div className="card p-6 text-center text-slate-600">
+          <p className="font-medium">No products loaded for {FORM_TYPE_LABELS[orderFormType]}.</p>
+          <p className="text-sm mt-2">
+            The product sheet has not been imported yet. Ask Head Office to run{" "}
+            <code className="text-xs bg-slate-100 px-1 rounded">python -m app.db.seed SULFAG</code> on the server.
+          </p>
+          <Link to="/customer/new" className="inline-block mt-4 text-sm text-brand-700 hover:underline">
+            Change order form
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
