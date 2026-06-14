@@ -1,7 +1,7 @@
 """add order product remarks
 
 Revision ID: 0003_add_order_product_remarks
-Revises: 0002_add_mobile_number
+Revises: 0002_add_mobile
 Create Date: 2026-06-14
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0003_add_order_product_remarks"
-down_revision: Union[str, None] = "0002_add_mobile_number"
+down_revision: Union[str, None] = "0002_add_mobile"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

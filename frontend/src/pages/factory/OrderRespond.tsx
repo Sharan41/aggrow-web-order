@@ -122,6 +122,7 @@ export default function FactoryOrderRespond() {
         cells={cells}
         onChange={editable ? setCells : undefined}
         mode={editable ? "factory-respond" : "view"}
+        hideRemarks
       />
     </div>
   );

@@ -86,7 +86,7 @@ def get_order(
         select(Order)
         .options(
             selectinload(Order.items).selectinload(OrderItem.product).selectinload(Product.packing_group),
-            selectinload(Order.product_remarks),
+            *([] if user.role == UserRole.FACTORY else [selectinload(Order.product_remarks)]),
             selectinload(Order.events),
             selectinload(Order.customer),
             selectinload(Order.branch),

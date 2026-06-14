@@ -111,11 +111,20 @@ interface Props {
   onRemarksChange?: (next: RemarksMap) => void;
   onChange?: (next: CellMap) => void;
   mode: FormMode;
+  hideRemarks?: boolean;
 }
 
-export function OrderFormTable({ catalog, cells, remarks = {}, onRemarksChange, onChange, mode }: Props) {
+export function OrderFormTable({
+  catalog,
+  cells,
+  remarks = {},
+  onRemarksChange,
+  onChange,
+  mode,
+  hideRemarks = false,
+}: Props) {
   const readOnly = mode === "view" || mode === "ho-view" || mode === "customer-view-response" || !onChange;
-  const showRemarks = mode !== "factory-respond";
+  const showRemarks = !hideRemarks && mode !== "factory-respond";
   const remarksEditable =
     (mode === "customer-edit" || mode === "ho-edit") && !!onRemarksChange;
 
