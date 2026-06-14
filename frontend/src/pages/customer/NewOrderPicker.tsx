@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FORM_TYPE_LABELS, formTypeToParam } from "../lib/orderFormType";
+import { FORM_TYPE_LABELS, formTypeToParam } from "../../lib/orderFormType";
 
 export default function NewOrderPicker() {
   return (

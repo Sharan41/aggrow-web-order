@@ -21,12 +21,12 @@ export default function CustomerOrderDetail() {
   const orderId = Number(id);
   const qc = useQueryClient();
   const { showToast } = useToast();
-  const { data: catalog } = useCatalog(order?.order_form_type ?? "AG_GROW");
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderId],
     queryFn: () => ordersApi.get(orderId),
     enabled: !!orderId,
   });
+  const { data: catalog } = useCatalog(order?.order_form_type ?? "AG_GROW");
 
   const [cells, setCells] = useState<CellMap>({});
   const [remarks, setRemarks] = useState<RemarksMap>({});
