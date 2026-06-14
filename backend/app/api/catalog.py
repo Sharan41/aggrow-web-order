@@ -46,8 +46,17 @@ def get_catalog(
 
 @router.post("/categories", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
 def create_category(body: CategoryCreate, db: Session = Depends(get_db), _: User = Depends(ho_only)) -> CategoryRead:
-    if db.execute(select(Category).where(Category.name == body.name)).scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Category with this name already exists")
+    exists = db.execute(
+        select(Category).where(
+            Category.name == body.name,
+            Category.catalog_type == body.catalog_type,
+        )
+    ).scalar_one_or_none()
+    if exists:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Category '{body.name}' already exists for {body.catalog_type.value}",
+        )
     cat = Category(**body.model_dump())
     db.add(cat)
     db.commit()

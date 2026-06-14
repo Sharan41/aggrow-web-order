@@ -3,17 +3,24 @@ import { useState } from "react";
 import { catalogApi } from "../../api/catalog";
 import { useCatalog } from "../../hooks/useCatalog";
 import { useToast } from "../../components/Toast";
-import type { PackingGroup, Product } from "../../types";
+import { FormTypeBadge } from "../../components/FormTypeBadge";
+import { FORM_TYPE_LABELS } from "../../lib/orderFormType";
+import type { OrderFormType, PackingGroup, Product } from "../../types";
+
+const FORM_TYPES: OrderFormType[] = ["AG_GROW", "SULFAG"];
 
 export default function HoCatalog() {
+  const [formType, setFormType] = useState<OrderFormType>("AG_GROW");
   const qc = useQueryClient();
   const { showToast } = useToast();
-  const { data: catalog } = useCatalog();
+  const { data: catalog } = useCatalog(formType);
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["catalog", formType] });
 
   const createCategory = useMutation({
-    mutationFn: (name: string) => catalogApi.createCategory({ name }),
+    mutationFn: (name: string) => catalogApi.createCategory({ name, catalog_type: formType }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["catalog"] });
+      invalidate();
       showToast("Category created successfully");
     },
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to create category", "error"),
@@ -22,7 +29,7 @@ export default function HoCatalog() {
   const deleteCategory = useMutation({
     mutationFn: (id: number) => catalogApi.deleteCategory(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["catalog"] });
+      invalidate();
       showToast("Category deleted successfully");
     },
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to delete category", "error"),
@@ -32,7 +39,7 @@ export default function HoCatalog() {
     mutationFn: (body: { category_id: number; label: string; column_headers: string[] }) =>
       catalogApi.createPackingGroup(body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["catalog"] });
+      invalidate();
       showToast("Packing group created successfully");
     },
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to create group", "error"),
@@ -41,7 +48,7 @@ export default function HoCatalog() {
   const deleteGroup = useMutation({
     mutationFn: (id: number) => catalogApi.deletePackingGroup(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["catalog"] });
+      invalidate();
       showToast("Packing group deleted successfully");
     },
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to delete group", "error"),
@@ -56,7 +63,7 @@ export default function HoCatalog() {
       available_sizes: string[];
     }) => catalogApi.createProduct(body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["catalog"] });
+      invalidate();
       showToast("Product added successfully");
     },
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to add product", "error"),
@@ -71,7 +78,7 @@ export default function HoCatalog() {
       body: { available_sizes?: string[]; name?: string; packing_type?: string | null };
     }) => catalogApi.updateProduct(id, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["catalog"] });
+      invalidate();
       showToast("Product updated successfully");
     },
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to update product", "error"),
@@ -80,7 +87,7 @@ export default function HoCatalog() {
   const deleteProduct = useMutation({
     mutationFn: (id: number) => catalogApi.deleteProduct(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["catalog"] });
+      invalidate();
       showToast("Product deleted successfully");
     },
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to delete product", "error"),
@@ -92,7 +99,36 @@ export default function HoCatalog() {
 
   return (
     <div className="space-y-4 md:space-y-6 px-3 md:px-0">
-      <h1 className="text-xl md:text-2xl font-semibold">Catalog Management</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-xl md:text-2xl font-semibold">Catalog Management</h1>
+        <div className="flex gap-2">
+          {FORM_TYPES.map((type) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => setFormType(type)}
+              className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                formType === type
+                  ? "border-brand-500 bg-brand-50 text-brand-800"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
+            >
+              {FORM_TYPE_LABELS[type]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-sm text-slate-600">
+        <span>Managing catalog for</span>
+        <FormTypeBadge type={formType} />
+      </div>
+
+      {catalog.categories.length === 0 ? (
+        <div className="card p-6 text-center text-slate-500">
+          No categories in the {FORM_TYPE_LABELS[formType]} catalog yet. Add one below or re-import from Excel.
+        </div>
+      ) : null}
 
       <div className="card p-3 md:p-4 flex flex-col md:flex-row gap-2">
         <input

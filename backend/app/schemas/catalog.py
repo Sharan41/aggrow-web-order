@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from app.models.form_type import OrderFormType
+
 
 class ProductPackingRead(BaseModel):
     size_label: str
@@ -51,6 +53,7 @@ class CatalogRead(BaseModel):
 
 class CategoryCreate(BaseModel):
     name: str
+    catalog_type: OrderFormType = OrderFormType.AG_GROW
     display_order: int = 0
 
 
