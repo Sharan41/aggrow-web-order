@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ordersApi } from "../../api/orders";
 import { StatusBadge } from "../../components/StatusBadge";
+import { FormTypeBadge } from "../../components/FormTypeBadge";
 
 export default function OrderHistory() {
   const { data, isLoading } = useQuery({
@@ -29,6 +30,7 @@ export default function OrderHistory() {
             <thead className="bg-slate-100">
               <tr>
                 <th className="text-left px-3 py-2">#</th>
+                <th className="text-left px-3 py-2">Order form</th>
                 <th className="text-left px-3 py-2">Status</th>
                 <th className="text-left px-3 py-2">Items</th>
                 <th className="text-left px-3 py-2">Created</th>
@@ -42,6 +44,9 @@ export default function OrderHistory() {
               {data.map((o) => (
                 <tr key={o.id} className="border-t border-slate-100 hover:bg-slate-50">
                   <td className="px-3 py-2 font-medium">#{o.id}</td>
+                  <td className="px-3 py-2">
+                    <FormTypeBadge type={o.order_form_type} />
+                  </td>
                   <td className="px-3 py-2">
                     <StatusBadge status={o.status} />
                   </td>

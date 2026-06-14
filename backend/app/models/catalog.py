@@ -1,15 +1,20 @@
-from sqlalchemy import Boolean, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
 from app.models._types import JSONType
+from app.models.form_type import OrderFormType
 
 
 class Category(Base):
     __tablename__ = "categories"
+    __table_args__ = (UniqueConstraint("catalog_type", "name", name="uq_category_catalog_name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    catalog_type: Mapped[OrderFormType] = mapped_column(
+        Enum(OrderFormType, name="order_form_type"), default=OrderFormType.AG_GROW, nullable=False, index=True
+    )
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     packing_groups: Mapped[list["PackingGroup"]] = relationship(

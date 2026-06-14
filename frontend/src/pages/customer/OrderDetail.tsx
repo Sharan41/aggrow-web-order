@@ -14,13 +14,14 @@ import {
   type RemarksMap,
 } from "../../components/OrderFormTable";
 import { StatusBadge } from "../../components/StatusBadge";
+import { FormTypeBadge } from "../../components/FormTypeBadge";
 
 export default function CustomerOrderDetail() {
   const { id } = useParams<{ id: string }>();
   const orderId = Number(id);
   const qc = useQueryClient();
   const { showToast } = useToast();
-  const { data: catalog } = useCatalog();
+  const { data: catalog } = useCatalog(order?.order_form_type ?? "AG_GROW");
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderId],
     queryFn: () => ordersApi.get(orderId),
@@ -81,8 +82,9 @@ export default function CustomerOrderDetail() {
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div>
           <h1 className="text-xl md:text-2xl font-semibold">Order #{order.id}</h1>
-          <div className="mt-1">
+          <div className="mt-1 flex items-center gap-2 flex-wrap">
             <StatusBadge status={order.status} />
+            <FormTypeBadge type={order.order_form_type} />
           </div>
         </div>
         {isDraft && (

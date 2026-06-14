@@ -18,7 +18,7 @@ export default function FactoryOrderRespond() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { data: catalog } = useCatalog();
+  const { data: catalog } = useCatalog(order?.order_form_type ?? "AG_GROW");
   const { data: order } = useQuery({
     queryKey: ["order", orderId],
     queryFn: () => ordersApi.get(orderId),

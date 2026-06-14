@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { DashboardKPI, OrderDetail, OrderStatus, OrderSummary } from "../types";
+import type { DashboardKPI, OrderDetail, OrderFormType, OrderStatus, OrderSummary } from "../types";
 
 export interface ItemInput {
   product_id: number;
@@ -26,7 +26,12 @@ export const ordersApi = {
       .then((r) => r.data),
   kpis: () => apiClient.get<DashboardKPI>("/orders/kpis").then((r) => r.data),
   get: (id: number) => apiClient.get<OrderDetail>(`/orders/${id}`).then((r) => r.data),
-  create: (body: { items: ItemInput[]; customer_note?: string | null; product_remarks?: ProductRemarkInput[] }) =>
+  create: (body: {
+    items: ItemInput[];
+    customer_note?: string | null;
+    product_remarks?: ProductRemarkInput[];
+    order_form_type?: OrderFormType;
+  }) =>
     apiClient.post<OrderDetail>("/orders", body).then((r) => r.data),
   updateDraft: (
     id: number,

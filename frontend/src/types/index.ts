@@ -1,5 +1,7 @@
 export type UserRole = "CUSTOMER" | "HEAD_OFFICE" | "FACTORY";
 
+export type OrderFormType = "AG_GROW" | "SULFAG";
+
 export type OrderStatus =
   | "DRAFT"
   | "SUBMITTED_TO_HO"
@@ -96,6 +98,7 @@ export interface OrderSummary {
   ho_forwarded_at: string | null;
   factory_responded_at: string | null;
   item_count: number;
+  order_form_type: OrderFormType;
 }
 
 export interface OrderDetail {
@@ -112,6 +115,7 @@ export interface OrderDetail {
   submitted_at: string | null;
   ho_forwarded_at: string | null;
   factory_responded_at: string | null;
+  order_form_type: OrderFormType;
   items: OrderItem[];
   product_remarks: ProductRemark[];
   events: OrderEvent[];

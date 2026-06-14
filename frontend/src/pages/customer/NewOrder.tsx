@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   buildCellMap,
   buildRemarksMap,
@@ -9,11 +9,15 @@ import {
   type CellMap,
   type RemarksMap,
 } from "../../components/OrderFormTable";
+import { FormTypeBadge } from "../../components/FormTypeBadge";
 import { useCatalog } from "../../hooks/useCatalog";
 import { ordersApi } from "../../api/orders";
+import { FORM_TYPE_LABELS, parseFormTypeParam } from "../../lib/orderFormType";
 
 export default function NewOrder() {
-  const { data: catalog, isLoading } = useCatalog();
+  const { formType: formTypeParam } = useParams<{ formType: string }>();
+  const orderFormType = parseFormTypeParam(formTypeParam);
+  const { data: catalog, isLoading } = useCatalog(orderFormType ?? "AG_GROW");
   const [cells, setCells] = useState<CellMap>({});
   const [remarks, setRemarks] = useState<RemarksMap>({});
   const [note, setNote] = useState("");
@@ -28,6 +32,8 @@ export default function NewOrder() {
     }
   }, [catalog]);
 
+  if (!orderFormType) return <Navigate to="/customer/new" replace />;
+
   const totalQty = Object.values(cells).reduce((s, c) => s + (c.customerQty || 0), 0);
 
   const saveDraft = async () => {
@@ -39,6 +45,7 @@ export default function NewOrder() {
         items,
         customer_note: note || null,
         product_remarks: remarksMapToInput(remarks),
+        order_form_type: orderFormType,
       });
       navigate(`/customer/orders/${order.id}`);
     } catch (err: any) {
@@ -58,6 +65,7 @@ export default function NewOrder() {
         items,
         customer_note: note || null,
         product_remarks: remarksMapToInput(remarks),
+        order_form_type: orderFormType,
       });
       await ordersApi.submit(order.id);
       navigate(`/customer/orders/${order.id}`);
@@ -74,10 +82,17 @@ export default function NewOrder() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">New Order</h1>
-          <p className="text-slate-500 text-sm">
-            Fill quantities only in cells marked as available. Total items selected: <b>{totalQty}</b>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-semibold">New Order</h1>
+            <FormTypeBadge type={orderFormType} />
+          </div>
+          <p className="text-slate-500 text-sm mt-1">
+            {FORM_TYPE_LABELS[orderFormType]} sheet — fill quantities only in available cells. Total selected:{" "}
+            <b>{totalQty}</b>
           </p>
+          <Link to="/customer/new" className="text-xs text-brand-700 hover:underline">
+            Change order form
+          </Link>
         </div>
         <div className="flex gap-2">
           <button className="btn-secondary" disabled={saving} onClick={saveDraft}>

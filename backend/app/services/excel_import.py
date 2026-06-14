@@ -28,6 +28,8 @@ _CATEGORY_CANONICAL = {
     "BIO STIMULANTS": "Bio Stimulants",
     "BIOSTIMULANTS": "Bio Stimulants",
     "BIO STIMULANT": "Bio Stimulants",
+    "PGR": "PGR",
+    "PGRS": "PGR",
 }
 
 

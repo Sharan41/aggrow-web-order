@@ -8,6 +8,9 @@ from app.core.db import Base
 from app.models._types import JSONType
 
 
+from app.models.form_type import OrderFormType
+
+
 class OrderStatus(str, enum.Enum):
     DRAFT = "DRAFT"
     SUBMITTED_TO_HO = "SUBMITTED_TO_HO"
@@ -35,6 +38,9 @@ class Order(Base):
     branch_id: Mapped[int | None] = mapped_column(ForeignKey("branches.id", ondelete="SET NULL"), nullable=True)
     status: Mapped[OrderStatus] = mapped_column(
         Enum(OrderStatus, name="order_status"), default=OrderStatus.DRAFT, nullable=False, index=True
+    )
+    order_form_type: Mapped[OrderFormType] = mapped_column(
+        Enum(OrderFormType, name="order_form_type"), default=OrderFormType.AG_GROW, nullable=False, index=True
     )
 
     customer_note: Mapped[str | None] = mapped_column(Text, nullable=True)

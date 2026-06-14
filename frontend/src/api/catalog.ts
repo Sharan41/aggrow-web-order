@@ -1,8 +1,9 @@
 import { apiClient } from "./client";
-import type { Catalog } from "../types";
+import type { Catalog, OrderFormType } from "../types";
 
 export const catalogApi = {
-  get: () => apiClient.get<Catalog>("/catalog").then((r) => r.data),
+  get: (formType: OrderFormType = "AG_GROW") =>
+    apiClient.get<Catalog>("/catalog", { params: { form_type: formType } }).then((r) => r.data),
   createCategory: (body: { name: string; display_order?: number }) =>
     apiClient.post("/catalog/categories", body).then((r) => r.data),
   updateCategory: (id: number, body: { name?: string; display_order?: number }) =>

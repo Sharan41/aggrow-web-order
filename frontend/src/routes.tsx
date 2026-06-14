@@ -5,6 +5,7 @@ import { AppLayout } from "./components/AppLayout";
 import { homeForRole } from "./routes-helper";
 import Login from "./pages/Login";
 import NewOrder from "./pages/customer/NewOrder";
+import NewOrderPicker from "./pages/customer/NewOrderPicker";
 import OrderHistory from "./pages/customer/OrderHistory";
 import CustomerOrderDetail from "./pages/customer/OrderDetail";
 import HoDashboard from "./pages/headOffice/Dashboard";
@@ -39,6 +40,14 @@ export function AppRoutes() {
 
         <Route
           path="/customer/new"
+          element={
+            <RoleRoute roles={["CUSTOMER"]}>
+              <NewOrderPicker />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/customer/new/:formType"
           element={
             <RoleRoute roles={["CUSTOMER"]}>
               <NewOrder />

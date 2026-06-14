@@ -14,6 +14,7 @@ import {
   type RemarksMap,
 } from "../../components/OrderFormTable";
 import { StatusBadge } from "../../components/StatusBadge";
+import { FormTypeBadge } from "../../components/FormTypeBadge";
 
 export default function HoOrderEdit() {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +22,7 @@ export default function HoOrderEdit() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { data: catalog } = useCatalog();
+  const { data: catalog } = useCatalog(order?.order_form_type ?? "AG_GROW");
   const { data: order } = useQuery({
     queryKey: ["order", orderId],
     queryFn: () => ordersApi.get(orderId),
@@ -121,6 +122,7 @@ export default function HoOrderEdit() {
           </h1>
           <div className="mt-1 text-slate-500 text-xs md:text-sm flex gap-2 items-center flex-wrap">
             <StatusBadge status={order.status} />
+            <FormTypeBadge type={order.order_form_type} />
             {order.branch_name && <span>Branch: {order.branch_name}</span>}
           </div>
         </div>

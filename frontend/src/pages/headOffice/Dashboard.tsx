@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ordersApi } from "../../api/orders";
 import { StatusBadge } from "../../components/StatusBadge";
+import { FormTypeBadge } from "../../components/FormTypeBadge";
 import { useToast } from "../../components/Toast";
 import type { OrderSummary } from "../../types";
 
@@ -65,6 +66,7 @@ export default function HoDashboard() {
               <th className="text-left px-3 py-2">#</th>
               <th className="text-left px-3 py-2">Customer</th>
               <th className="text-left px-3 py-2">Branch</th>
+              <th className="text-left px-3 py-2">Order form</th>
               <th className="text-left px-3 py-2">Status</th>
               <th className="text-left px-3 py-2">Items</th>
               <th className="text-left px-3 py-2">Created</th>
@@ -77,6 +79,9 @@ export default function HoDashboard() {
                 <td className="px-3 py-2 font-medium">#{o.id}</td>
                 <td className="px-3 py-2">{o.customer_name}</td>
                 <td className="px-3 py-2">{o.branch_name ?? "—"}</td>
+                <td className="px-3 py-2">
+                  <FormTypeBadge type={o.order_form_type} />
+                </td>
                 <td className="px-3 py-2">
                   <StatusBadge status={o.status} />
                 </td>

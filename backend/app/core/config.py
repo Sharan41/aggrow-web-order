@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     TWILIO_FROM_NUMBER: str = ""
 
     CATALOG_EXCEL_PATH: str = "../AG - ORDER FORM excel.xlsx"
+    SULFAG_CATALOG_EXCEL_PATH: str = "../2026.05 PRODUCTS LIST (SP).xlsx"
 
 
 @lru_cache

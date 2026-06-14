@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.db import get_db
 from app.core.deps import get_current_user, require_role
 from app.models import Category, PackingGroup, Product, ProductPacking, User, UserRole
+from app.models.form_type import OrderFormType
 from app.schemas.catalog import (
     CatalogRead,
     CategoryCreate,
@@ -23,9 +24,14 @@ ho_only = require_role(UserRole.HEAD_OFFICE)
 
 
 @router.get("", response_model=CatalogRead)
-def get_catalog(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> CatalogRead:
+def get_catalog(
+    form_type: OrderFormType = Query(default=OrderFormType.AG_GROW, alias="form_type"),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+) -> CatalogRead:
     rows = db.execute(
         select(Category)
+        .where(Category.catalog_type == form_type)
         .options(
             selectinload(Category.packing_groups)
             .selectinload(PackingGroup.products)

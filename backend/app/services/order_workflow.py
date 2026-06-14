@@ -9,16 +9,19 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models import (
+    Category,
     Order,
     OrderEvent,
     OrderItem,
     OrderProductRemark,
     OrderStatus,
+    PackingGroup,
     Product,
     ProductPacking,
     User,
     UserRole,
 )
+from app.models.form_type import OrderFormType
 from app.models.order import OrderEventAction
 from app.services import notification as notif
 
@@ -83,18 +86,30 @@ def _load_order(db: Session, order_id: int) -> Order:
     return order
 
 
-def _assert_packing_available(db: Session, product_id: int, size_label: str) -> None:
-    pp = db.execute(
-        select(ProductPacking).where(
+def _assert_packing_available(
+    db: Session, product_id: int, size_label: str, order_form_type: OrderFormType
+) -> None:
+    row = db.execute(
+        select(ProductPacking, Category.catalog_type)
+        .join(Product, ProductPacking.product_id == Product.id)
+        .join(PackingGroup, Product.packing_group_id == PackingGroup.id)
+        .join(Category, PackingGroup.category_id == Category.id)
+        .where(
             ProductPacking.product_id == product_id,
             ProductPacking.size_label == size_label,
             ProductPacking.available.is_(True),
         )
-    ).scalar_one_or_none()
-    if not pp:
+    ).first()
+    if not row:
         raise HTTPException(
             status_code=400,
             detail=f"Packing not available: product {product_id} @ {size_label}",
+        )
+    _, catalog_type = row
+    if catalog_type != order_form_type:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Product {product_id} does not belong to {order_form_type.value} catalog",
         )
 
 
@@ -131,6 +146,7 @@ def create_draft(
     items: list[ItemInput],
     customer_note: str | None,
     product_remarks: list[ProductRemarkInput] | None = None,
+    order_form_type: OrderFormType = OrderFormType.AG_GROW,
 ) -> Order:
     if customer.role != UserRole.CUSTOMER:
         raise HTTPException(status_code=403, detail="Only customers can create orders")
@@ -139,6 +155,7 @@ def create_draft(
         branch_id=customer.branch_id,
         status=OrderStatus.DRAFT,
         customer_note=customer_note,
+        order_form_type=order_form_type,
     )
     db.add(order)
     db.flush()
@@ -155,7 +172,7 @@ def _apply_customer_items(db: Session, order: Order, items: list[ItemInput]) -> 
     for it in items:
         if it.qty <= 0:
             continue
-        _assert_packing_available(db, it.product_id, it.size_label)
+        _assert_packing_available(db, it.product_id, it.size_label, order.order_form_type)
         db.add(
             OrderItem(
                 order_id=order.id,
@@ -236,7 +253,7 @@ def ho_edit(
             if key in existing:
                 existing[key].ho_qty = it.qty
             else:
-                _assert_packing_available(db, it.product_id, it.size_label)
+                _assert_packing_available(db, it.product_id, it.size_label, order.order_form_type)
                 db.add(
                     OrderItem(
                         order_id=order.id,

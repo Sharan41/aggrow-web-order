@@ -19,7 +19,7 @@ from app.core.config import get_settings  # noqa: E402
 from app.core.db import Base, get_db  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.main import app  # noqa: E402
-from app.models import Branch, Category, PackingGroup, Product, ProductPacking, User, UserRole  # noqa: E402
+from app.models import Branch, Category, OrderFormType, PackingGroup, Product, ProductPacking, User, UserRole  # noqa: E402
 
 get_settings.cache_clear()  # re-read env
 settings = get_settings()
@@ -94,7 +94,7 @@ def seed(db):
     db.add_all([customer, ho, factory])
     db.flush()
 
-    cat = Category(name="Insecticides", display_order=0)
+    cat = Category(name="Insecticides", catalog_type=OrderFormType.AG_GROW, display_order=0)
     db.add(cat)
     db.flush()
     pg = PackingGroup(

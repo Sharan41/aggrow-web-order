@@ -71,7 +71,12 @@ def create_order(
     user: User = Depends(require_role(UserRole.CUSTOMER)),
 ) -> OrderDetail:
     order = wf.create_draft(
-        db, user, _to_item_inputs(body.items), body.customer_note, _to_remark_inputs(body.product_remarks)
+        db,
+        user,
+        _to_item_inputs(body.items),
+        body.customer_note,
+        _to_remark_inputs(body.product_remarks),
+        body.order_form_type,
     )
     return OrderDetail.from_model(order, viewer_role=user.role)
 

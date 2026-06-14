@@ -4,6 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.models.form_type import OrderFormType
 from app.models.order import OrderEventAction, OrderStatus
 from app.models.user import UserRole
 
@@ -79,6 +80,7 @@ class OrderSummary(BaseModel):
     ho_forwarded_at: datetime | None
     factory_responded_at: datetime | None
     item_count: int
+    order_form_type: OrderFormType
 
     @classmethod
     def from_model(cls, order) -> "OrderSummary":
@@ -94,6 +96,7 @@ class OrderSummary(BaseModel):
             ho_forwarded_at=order.ho_forwarded_at,
             factory_responded_at=order.factory_responded_at,
             item_count=len(order.items or []),
+            order_form_type=order.order_form_type,
         )
 
 
@@ -111,6 +114,7 @@ class OrderDetail(BaseModel):
     submitted_at: datetime | None
     ho_forwarded_at: datetime | None
     factory_responded_at: datetime | None
+    order_form_type: OrderFormType
     items: list[OrderItemRead]
     product_remarks: list[ProductRemarkRead] = Field(default_factory=list)
     events: list[OrderEventRead] = Field(default_factory=list)
@@ -133,6 +137,7 @@ class OrderDetail(BaseModel):
             submitted_at=order.submitted_at,
             ho_forwarded_at=order.ho_forwarded_at,
             factory_responded_at=order.factory_responded_at,
+            order_form_type=order.order_form_type,
             items=[OrderItemRead.from_model(i, viewer_role) for i in (order.items or [])],
             # Factory must not see per-product remarks
             product_remarks=(
@@ -151,6 +156,7 @@ class CreateOrderBody(BaseModel):
     items: list[OrderItemInput] = Field(default_factory=list)
     customer_note: str | None = None
     product_remarks: list[ProductRemarkInput] = Field(default_factory=list)
+    order_form_type: OrderFormType = OrderFormType.AG_GROW
 
 
 class UpdateDraftBody(BaseModel):
