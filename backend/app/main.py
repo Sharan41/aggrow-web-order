@@ -41,6 +41,8 @@ def cors_allow_origins(s: Settings) -> list[str]:
     aggrow_deployed_frontends = (
         # Production SPA on Render (override via FRONTEND_ORIGIN / EXTRA_CORS_ORIGINS if this changes)
         "https://aggrow-web-order-frontend.onrender.com",
+        "https://www.yourcropcare.in",
+        "https://yourcropcare.in",
     )
     out: list[str] = []
     for origin in (
