@@ -78,6 +78,7 @@ def _load_order(db: Session, order_id: int) -> Order:
             selectinload(Order.product_remarks),
             selectinload(Order.customer),
             selectinload(Order.branch),
+            selectinload(Order.ho_reviewer),
         )
         .where(Order.id == order_id)
     ).scalar_one_or_none()
@@ -280,12 +281,13 @@ def ho_forward(db: Session, order_id: int, actor: User) -> Order:
     if not any(i.ho_qty > 0 for i in order.items):
         raise HTTPException(
             status_code=400,
-            detail="Set at least one ho_qty > 0 before forwarding to factory",
+            detail="Set at least one ho_qty > 0 before forwarding to admin",
         )
-    order.status = OrderStatus.HO_FORWARDED
+    order.status = OrderStatus.SUBMITTED_TO_ADMIN
     order.ho_forwarded_at = _now()
-    _record_event(db, order, actor, OrderEventAction.HO_FORWARDED)
-    notif.fan_out_forwarded(db, order)
+    order.ho_reviewer_id = actor.id
+    _record_event(db, order, actor, OrderEventAction.HO_FORWARDED_TO_ADMIN)
+    notif.fan_out_ho_forwarded_to_admin(db, order, actor)
     db.commit()
     return _load_order(db, order.id)
 
@@ -299,7 +301,87 @@ def ho_reject(db: Session, order_id: int, actor: User, reason: str | None) -> Or
     order.status = OrderStatus.REJECTED
     order.ho_note = reason or order.ho_note
     _record_event(db, order, actor, OrderEventAction.HO_REJECTED, {"reason": reason})
-    notif.fan_out_rejected(db, order)
+    notif.fan_out_ho_rejected(db, order)
+    db.commit()
+    return _load_order(db, order.id)
+
+
+# --- Admin edit & forward ---
+
+def admin_edit(
+    db: Session,
+    order_id: int,
+    actor: User,
+    items: list[ItemInput] | None,
+    admin_note: str | None,
+    product_remarks: list[ProductRemarkInput] | None = None,
+) -> Order:
+    if actor.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin only")
+    order = _load_order(db, order_id)
+    if order.status not in (OrderStatus.SUBMITTED_TO_ADMIN,):
+        raise HTTPException(status_code=400, detail="Order not in SUBMITTED_TO_ADMIN state")
+    if admin_note is not None:
+        order.admin_note = admin_note
+    if items is not None:
+        existing = {(i.product_id, i.size_label): i for i in order.items}
+        incoming = {(it.product_id, it.size_label): it for it in items}
+        for key, item in list(existing.items()):
+            if key not in incoming:
+                item.ho_qty = 0
+        for key, it in incoming.items():
+            if it.qty < 0:
+                raise HTTPException(status_code=400, detail="Quantity cannot be negative")
+            if key in existing:
+                existing[key].ho_qty = it.qty
+            else:
+                _assert_packing_available(db, it.product_id, it.size_label, order.order_form_type)
+                db.add(
+                    OrderItem(
+                        order_id=order.id,
+                        product_id=it.product_id,
+                        size_label=it.size_label,
+                        customer_qty=0,
+                        ho_qty=it.qty,
+                    )
+                )
+        db.flush()
+    if product_remarks is not None:
+        _apply_product_remarks(db, order, product_remarks)
+    _record_event(db, order, actor, OrderEventAction.ADMIN_EDITED)
+    db.commit()
+    return _load_order(db, order.id)
+
+
+def admin_forward(db: Session, order_id: int, actor: User) -> Order:
+    if actor.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin only")
+    order = _load_order(db, order_id)
+    if order.status != OrderStatus.SUBMITTED_TO_ADMIN:
+        raise HTTPException(status_code=400, detail="Order not in SUBMITTED_TO_ADMIN state")
+    if not any(i.ho_qty > 0 for i in order.items):
+        raise HTTPException(
+            status_code=400,
+            detail="Set at least one ho_qty > 0 before forwarding to factory",
+        )
+    order.status = OrderStatus.HO_FORWARDED
+    order.admin_forwarded_at = _now()
+    _record_event(db, order, actor, OrderEventAction.ADMIN_FORWARDED)
+    notif.fan_out_forwarded(db, order)
+    db.commit()
+    return _load_order(db, order.id)
+
+
+def admin_reject(db: Session, order_id: int, actor: User, reason: str | None) -> Order:
+    if actor.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin only")
+    order = _load_order(db, order_id)
+    if order.status != OrderStatus.SUBMITTED_TO_ADMIN:
+        raise HTTPException(status_code=400, detail="Only SUBMITTED_TO_ADMIN orders can be rejected")
+    order.status = OrderStatus.REJECTED
+    order.admin_note = reason or order.admin_note
+    _record_event(db, order, actor, OrderEventAction.ADMIN_REJECTED, {"reason": reason})
+    notif.fan_out_admin_rejected(db, order)
     db.commit()
     return _load_order(db, order.id)
 
@@ -359,6 +441,7 @@ def scope_orders_query(user: User):
         selectinload(Order.items).selectinload(OrderItem.product).selectinload(Product.packing_group),
         selectinload(Order.customer),
         selectinload(Order.branch),
+        selectinload(Order.ho_reviewer),
     )
     if user.role == UserRole.CUSTOMER:
         q = q.where(Order.customer_id == user.id)
@@ -368,12 +451,12 @@ def scope_orders_query(user: User):
                 [OrderStatus.HO_FORWARDED, OrderStatus.FACTORY_RESPONDED, OrderStatus.COMPLETED]
             )
         )
-    # HEAD_OFFICE sees all
+    # HEAD_OFFICE and ADMIN see all
     return q.order_by(Order.created_at.desc())
 
 
 def can_view(order: Order, user: User) -> bool:
-    if user.role == UserRole.HEAD_OFFICE:
+    if user.role in (UserRole.HEAD_OFFICE, UserRole.ADMIN):
         return True
     if user.role == UserRole.CUSTOMER:
         return order.customer_id == user.id

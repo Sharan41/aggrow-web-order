@@ -29,7 +29,7 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
   const qc = useQueryClient();
   const { showToast } = useToast();
   const { data, isLoading } = useQuery({
-    queryKey: ["orders", "ho", status],
+    queryKey: ["orders", "admin", status],
     queryFn: () => ordersApi.list(status ? { status: status as OrderStatus } : undefined),
   });
 
@@ -56,7 +56,8 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
     return (
       String(o.id).includes(q) ||
       o.customer_name.toLowerCase().includes(q) ||
-      (o.branch_name ?? "").toLowerCase().includes(q)
+      (o.branch_name ?? "").toLowerCase().includes(q) ||
+      (o.ho_reviewer_name ?? "").toLowerCase().includes(q)
     );
   });
 
@@ -71,13 +72,13 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s} value={s}>
-              {s === "" ? "All statuses" : s.replace("_", " ")}
+              {s === "" ? "All statuses" : s.replace(/_/g, " ")}
             </option>
           ))}
         </select>
         <input
           className="input max-w-xs"
-          placeholder="Search by id / customer / branch"
+          placeholder="Search by id / customer / branch / HO"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -95,11 +96,13 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
                 <th className="text-left px-3 py-2">#</th>
                 <th className="text-left px-3 py-2">Customer</th>
                 <th className="text-left px-3 py-2">Branch</th>
+                <th className="text-left px-3 py-2">Head Office</th>
                 <th className="text-left px-3 py-2">Order form</th>
                 <th className="text-left px-3 py-2">Status</th>
                 <th className="text-left px-3 py-2">Items</th>
                 <th className="text-left px-3 py-2">Submitted</th>
-                <th className="text-left px-3 py-2">Forwarded</th>
+                <th className="text-left px-3 py-2">HO forwarded</th>
+                <th className="text-left px-3 py-2">Admin forwarded</th>
                 <th className="text-left px-3 py-2">Responded</th>
                 <th />
               </tr>
@@ -110,6 +113,7 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
                   <td className="px-3 py-2 font-medium">#{o.id}</td>
                   <td className="px-3 py-2">{o.customer_name}</td>
                   <td className="px-3 py-2">{o.branch_name ?? "—"}</td>
+                  <td className="px-3 py-2">{o.ho_reviewer_name ?? "—"}</td>
                   <td className="px-3 py-2">
                     <FormTypeBadge type={o.order_form_type} />
                   </td>
@@ -122,11 +126,14 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
                     {o.ho_forwarded_at ? new Date(o.ho_forwarded_at).toLocaleString() : "—"}
                   </td>
                   <td className="px-3 py-2">
+                    {o.admin_forwarded_at ? new Date(o.admin_forwarded_at).toLocaleString() : "—"}
+                  </td>
+                  <td className="px-3 py-2">
                     {o.factory_responded_at ? new Date(o.factory_responded_at).toLocaleString() : "—"}
                   </td>
                   <td className="px-3 py-2 text-right">
                     <div className="flex gap-2 justify-end items-center">
-                      <Link to={`/ho/orders/${o.id}`} className="text-brand-700 hover:underline">
+                      <Link to={`/admin/orders/${o.id}`} className="text-brand-700 hover:underline">
                         Open
                       </Link>
                       {o.status === "COMPLETED" && (
@@ -152,15 +159,15 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
   );
 }
 
-export function HoPending() {
-  return <OrdersList defaultStatus="SUBMITTED_TO_HO" title="Pending Approvals" />;
+export function AdminPending() {
+  return <OrdersList defaultStatus="SUBMITTED_TO_ADMIN" title="Pending Approvals" />;
 }
 
-export function HoAllOrders() {
+export function AdminAllOrders() {
   return <OrdersList title="All Orders" />;
 }
 
-export function HoFactoryResponses() {
+export function AdminFactoryResponses() {
   return (
     <OrdersList
       title="Factory Responses"

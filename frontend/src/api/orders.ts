@@ -42,6 +42,10 @@ export const ordersApi = {
     apiClient.patch<OrderDetail>(`/orders/${id}/ho`, body).then((r) => r.data),
   forward: (id: number) =>
     apiClient.post<OrderDetail>(`/orders/${id}/forward`).then((r) => r.data),
+  adminEdit: (id: number, body: { items?: ItemInput[]; admin_note?: string | null; product_remarks?: ProductRemarkInput[] }) =>
+    apiClient.patch<OrderDetail>(`/orders/${id}/admin`, body).then((r) => r.data),
+  adminForward: (id: number) =>
+    apiClient.post<OrderDetail>(`/orders/${id}/admin-forward`).then((r) => r.data),
   reject: (id: number, reason?: string | null) =>
     apiClient.post<OrderDetail>(`/orders/${id}/reject`, { reason }).then((r) => r.data),
   factoryRespond: (

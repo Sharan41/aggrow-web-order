@@ -78,7 +78,10 @@ class OrderSummary(BaseModel):
     created_at: datetime
     submitted_at: datetime | None
     ho_forwarded_at: datetime | None
+    admin_forwarded_at: datetime | None
     factory_responded_at: datetime | None
+    ho_reviewer_id: int | None = None
+    ho_reviewer_name: str | None = None
     item_count: int
     order_form_type: OrderFormType
 
@@ -94,7 +97,10 @@ class OrderSummary(BaseModel):
             created_at=order.created_at,
             submitted_at=order.submitted_at,
             ho_forwarded_at=order.ho_forwarded_at,
+            admin_forwarded_at=order.admin_forwarded_at,
             factory_responded_at=order.factory_responded_at,
+            ho_reviewer_id=order.ho_reviewer_id,
+            ho_reviewer_name=order.ho_reviewer.name if order.ho_reviewer else None,
             item_count=len(order.items or []),
             order_form_type=order.order_form_type,
         )
@@ -109,11 +115,15 @@ class OrderDetail(BaseModel):
     status: OrderStatus
     customer_note: str | None
     ho_note: str | None
+    admin_note: str | None
     factory_note: str | None
     created_at: datetime
     submitted_at: datetime | None
     ho_forwarded_at: datetime | None
+    admin_forwarded_at: datetime | None
     factory_responded_at: datetime | None
+    ho_reviewer_id: int | None = None
+    ho_reviewer_name: str | None = None
     order_form_type: OrderFormType
     items: list[OrderItemRead]
     product_remarks: list[ProductRemarkRead] = Field(default_factory=list)
@@ -128,18 +138,19 @@ class OrderDetail(BaseModel):
             branch_id=order.branch_id,
             branch_name=order.branch.name if order.branch else None,
             status=order.status,
-            # Factory must not see the customer note
             customer_note=None if viewer_role == UserRole.FACTORY else order.customer_note,
-            # Customers must not see HO-internal or factory notes
             ho_note=None if viewer_role == UserRole.CUSTOMER else order.ho_note,
+            admin_note=None if viewer_role == UserRole.CUSTOMER else order.admin_note,
             factory_note=None if viewer_role == UserRole.CUSTOMER else order.factory_note,
             created_at=order.created_at,
             submitted_at=order.submitted_at,
             ho_forwarded_at=order.ho_forwarded_at,
+            admin_forwarded_at=order.admin_forwarded_at,
             factory_responded_at=order.factory_responded_at,
+            ho_reviewer_id=order.ho_reviewer_id,
+            ho_reviewer_name=order.ho_reviewer.name if order.ho_reviewer else None,
             order_form_type=order.order_form_type,
             items=[OrderItemRead.from_model(i, viewer_role) for i in (order.items or [])],
-            # Factory must not see per-product remarks
             product_remarks=(
                 []
                 if viewer_role == UserRole.FACTORY
@@ -175,6 +186,16 @@ class HoRejectBody(BaseModel):
     reason: str | None = None
 
 
+class AdminEditBody(BaseModel):
+    items: list[OrderItemInput] | None = None
+    admin_note: str | None = None
+    product_remarks: list[ProductRemarkInput] | None = None
+
+
+class AdminRejectBody(BaseModel):
+    reason: str | None = None
+
+
 class FactoryRespondBody(BaseModel):
     items: list[FactoryItemInput]
     factory_note: str | None = None
@@ -183,6 +204,7 @@ class FactoryRespondBody(BaseModel):
 class DashboardKPI(BaseModel):
     draft: int = 0
     submitted_to_ho: int = 0
+    submitted_to_admin: int = 0
     ho_forwarded: int = 0
     factory_responded: int = 0
     completed: int = 0

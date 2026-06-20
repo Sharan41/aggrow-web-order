@@ -84,6 +84,13 @@ def seed(db):
         role=UserRole.HEAD_OFFICE,
         active=True,
     )
+    admin = User(
+        email="admin@x.com",
+        password_hash=hash_password("pw12345"),
+        name="Admin",
+        role=UserRole.ADMIN,
+        active=True,
+    )
     factory = User(
         email="fac@x.com",
         password_hash=hash_password("pw12345"),
@@ -91,7 +98,7 @@ def seed(db):
         role=UserRole.FACTORY,
         active=True,
     )
-    db.add_all([customer, ho, factory])
+    db.add_all([customer, ho, admin, factory])
     db.flush()
 
     cat = Category(name="Insecticides", catalog_type=OrderFormType.AG_GROW, display_order=0)
@@ -116,6 +123,7 @@ def seed(db):
         "branch": branch,
         "customer": customer,
         "ho": ho,
+        "admin": admin,
         "factory": factory,
         "category": cat,
         "group": pg,
@@ -138,5 +146,6 @@ def tokens(client, seed):
     return {
         "customer": login(client, "cust@x.com"),
         "ho": login(client, "ho@x.com"),
+        "admin": login(client, "admin@x.com"),
         "factory": login(client, "fac@x.com"),
     }

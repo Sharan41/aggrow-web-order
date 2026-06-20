@@ -20,7 +20,7 @@ from app.schemas.catalog import (
 )
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
-ho_only = require_role(UserRole.HEAD_OFFICE)
+admin_only = require_role(UserRole.ADMIN)
 
 
 @router.get("", response_model=CatalogRead)
@@ -45,7 +45,7 @@ def get_catalog(
 # ---------- categories ----------
 
 @router.post("/categories", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
-def create_category(body: CategoryCreate, db: Session = Depends(get_db), _: User = Depends(ho_only)) -> CategoryRead:
+def create_category(body: CategoryCreate, db: Session = Depends(get_db), _: User = Depends(admin_only)) -> CategoryRead:
     exists = db.execute(
         select(Category).where(
             Category.name == body.name,
@@ -69,7 +69,7 @@ def update_category(
     category_id: int,
     body: CategoryUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(ho_only),
+    _: User = Depends(admin_only),
 ) -> CategoryRead:
     cat = db.get(Category, category_id)
     if not cat:
@@ -82,7 +82,7 @@ def update_category(
 
 
 @router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_category(category_id: int, db: Session = Depends(get_db), _: User = Depends(ho_only)) -> None:
+def delete_category(category_id: int, db: Session = Depends(get_db), _: User = Depends(admin_only)) -> None:
     cat = db.get(Category, category_id)
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -96,7 +96,7 @@ def delete_category(category_id: int, db: Session = Depends(get_db), _: User = D
 def create_packing_group(
     body: PackingGroupCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(ho_only),
+    _: User = Depends(admin_only),
 ) -> PackingGroupRead:
     if not db.get(Category, body.category_id):
         raise HTTPException(status_code=400, detail="Category not found")
@@ -112,7 +112,7 @@ def update_packing_group(
     group_id: int,
     body: PackingGroupUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(ho_only),
+    _: User = Depends(admin_only),
 ) -> PackingGroupRead:
     pg = db.get(PackingGroup, group_id)
     if not pg:
@@ -125,7 +125,7 @@ def update_packing_group(
 
 
 @router.delete("/packing-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_packing_group(group_id: int, db: Session = Depends(get_db), _: User = Depends(ho_only)) -> None:
+def delete_packing_group(group_id: int, db: Session = Depends(get_db), _: User = Depends(admin_only)) -> None:
     pg = db.get(PackingGroup, group_id)
     if not pg:
         raise HTTPException(status_code=404, detail="Packing group not found")
@@ -149,7 +149,7 @@ def _sync_packings(db: Session, product: Product, sizes: list[str] | None) -> No
 
 
 @router.post("/products", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
-def create_product(body: ProductCreate, db: Session = Depends(get_db), _: User = Depends(ho_only)) -> ProductRead:
+def create_product(body: ProductCreate, db: Session = Depends(get_db), _: User = Depends(admin_only)) -> ProductRead:
     pg = db.get(PackingGroup, body.packing_group_id)
     if not pg:
         raise HTTPException(status_code=400, detail="Packing group not found")
@@ -178,7 +178,7 @@ def update_product(
     product_id: int,
     body: ProductUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(ho_only),
+    _: User = Depends(admin_only),
 ) -> ProductRead:
     product = db.get(Product, product_id)
     if not product:
@@ -199,7 +199,7 @@ def update_product(
 
 
 @router.delete("/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_product(product_id: int, db: Session = Depends(get_db), _: User = Depends(ho_only)) -> None:
+def delete_product(product_id: int, db: Session = Depends(get_db), _: User = Depends(admin_only)) -> None:
     product = db.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")

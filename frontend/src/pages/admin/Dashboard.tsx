@@ -16,7 +16,7 @@ function KpiCard({ label, value, to }: { label: string; value: number; to?: stri
   return to ? <Link to={to}>{inner}</Link> : inner;
 }
 
-export default function HoDashboard() {
+export default function AdminDashboard() {
   const qc = useQueryClient();
   const { showToast } = useToast();
   const { data: kpis } = useQuery({ queryKey: ["kpis"], queryFn: () => ordersApi.kpis() });
@@ -40,15 +40,15 @@ export default function HoDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Head Office Dashboard</h1>
+      <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-        <KpiCard label="Total" value={kpis?.total ?? 0} to="/ho/orders" />
+        <KpiCard label="Total" value={kpis?.total ?? 0} to="/admin/orders" />
         <KpiCard label="Draft" value={kpis?.draft ?? 0} />
-        <KpiCard label="Pending approval" value={kpis?.submitted_to_ho ?? 0} to="/ho/pending" />
-        <KpiCard label="With admin" value={kpis?.submitted_to_admin ?? 0} />
+        <KpiCard label="Pending at HO" value={kpis?.submitted_to_ho ?? 0} />
+        <KpiCard label="Pending approval" value={kpis?.submitted_to_admin ?? 0} to="/admin/pending" />
         <KpiCard label="In factory" value={kpis?.ho_forwarded ?? 0} />
-        <KpiCard label="Factory responded" value={kpis?.factory_responded ?? 0} to="/ho/factory" />
+        <KpiCard label="Factory responded" value={kpis?.factory_responded ?? 0} to="/admin/factory" />
         <KpiCard label="Completed" value={kpis?.completed ?? 0} />
         <KpiCard label="Rejected" value={kpis?.rejected ?? 0} />
       </div>
@@ -56,7 +56,7 @@ export default function HoDashboard() {
       <div className="card overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-200 flex justify-between items-center">
           <h2 className="font-medium">Recent orders</h2>
-          <Link to="/ho/orders" className="text-sm text-brand-700 hover:underline">
+          <Link to="/admin/orders" className="text-sm text-brand-700 hover:underline">
             View all
           </Link>
         </div>
@@ -67,6 +67,7 @@ export default function HoDashboard() {
               <th className="text-left px-3 py-2">#</th>
               <th className="text-left px-3 py-2">Customer</th>
               <th className="text-left px-3 py-2">Branch</th>
+              <th className="text-left px-3 py-2">Head Office</th>
               <th className="text-left px-3 py-2">Order form</th>
               <th className="text-left px-3 py-2">Status</th>
               <th className="text-left px-3 py-2">Items</th>
@@ -80,6 +81,7 @@ export default function HoDashboard() {
                 <td className="px-3 py-2 font-medium">#{o.id}</td>
                 <td className="px-3 py-2">{o.customer_name}</td>
                 <td className="px-3 py-2">{o.branch_name ?? "—"}</td>
+                <td className="px-3 py-2">{o.ho_reviewer_name ?? "—"}</td>
                 <td className="px-3 py-2">
                   <FormTypeBadge type={o.order_form_type} />
                 </td>
@@ -90,7 +92,7 @@ export default function HoDashboard() {
                 <td className="px-3 py-2">{new Date(o.created_at).toLocaleString()}</td>
                 <td className="px-3 py-2 text-right">
                   <div className="flex gap-2 justify-end items-center">
-                    <Link to={`/ho/orders/${o.id}`} className="text-brand-700 hover:underline">
+                    <Link to={`/admin/orders/${o.id}`} className="text-brand-700 hover:underline">
                       Open
                     </Link>
                     {o.status === "COMPLETED" && (

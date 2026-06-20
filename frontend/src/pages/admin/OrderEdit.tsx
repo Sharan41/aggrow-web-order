@@ -16,7 +16,7 @@ import {
 import { StatusBadge } from "../../components/StatusBadge";
 import { FormTypeBadge } from "../../components/FormTypeBadge";
 
-export default function HoOrderEdit() {
+export default function AdminOrderEdit() {
   const { id } = useParams<{ id: string }>();
   const orderId = Number(id);
   const qc = useQueryClient();
@@ -44,15 +44,15 @@ export default function HoOrderEdit() {
         ),
       );
       setRemarks(buildRemarksMap(catalog, order.product_remarks ?? []));
-      setNote(order.ho_note ?? "");
+      setNote(order.admin_note ?? "");
     }
   }, [order, catalog]);
 
   const save = useMutation({
     mutationFn: () =>
-      ordersApi.hoEdit(orderId, {
+      ordersApi.adminEdit(orderId, {
         items: cellsToItems(cells, "ho"),
-        ho_note: note || null,
+        admin_note: note || null,
         product_remarks: remarksMapToInput(remarks, order?.product_remarks),
       }),
     onSuccess: () => {
@@ -64,18 +64,18 @@ export default function HoOrderEdit() {
 
   const forward = useMutation({
     mutationFn: async () => {
-      await ordersApi.hoEdit(orderId, {
+      await ordersApi.adminEdit(orderId, {
         items: cellsToItems(cells, "ho"),
-        ho_note: note || null,
+        admin_note: note || null,
         product_remarks: remarksMapToInput(remarks, order?.product_remarks),
       });
-      return ordersApi.forward(orderId);
+      return ordersApi.adminForward(orderId);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["order", orderId] });
       qc.invalidateQueries({ queryKey: ["orders"] });
-      showToast("Order forwarded to admin successfully");
-      navigate("/ho/orders");
+      showToast("Order forwarded to factory successfully");
+      navigate("/admin/orders");
     },
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to forward", "error"),
   });
@@ -86,7 +86,7 @@ export default function HoOrderEdit() {
       qc.invalidateQueries({ queryKey: ["order", orderId] });
       qc.invalidateQueries({ queryKey: ["orders"] });
       showToast("Order rejected successfully");
-      navigate("/ho/orders");
+      navigate("/admin/orders");
     },
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to reject", "error"),
   });
@@ -97,14 +97,14 @@ export default function HoOrderEdit() {
       qc.invalidateQueries({ queryKey: ["orders"] });
       qc.invalidateQueries({ queryKey: ["kpis"] });
       showToast("Order deleted successfully");
-      navigate("/ho/orders");
+      navigate("/admin/orders");
     },
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to delete order", "error"),
   });
 
   if (!order || !catalog) return <div className="text-slate-500">Loading…</div>;
 
-  const editable = order.status === "SUBMITTED_TO_HO";
+  const editable = order.status === "SUBMITTED_TO_ADMIN";
   const canDelete = order.status === "COMPLETED";
 
   const handleDelete = () => {
@@ -124,6 +124,7 @@ export default function HoOrderEdit() {
             <StatusBadge status={order.status} />
             <FormTypeBadge type={order.order_form_type} />
             {order.branch_name && <span>Branch: {order.branch_name}</span>}
+            {order.ho_reviewer_name && <span>Head Office: {order.ho_reviewer_name}</span>}
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -147,7 +148,7 @@ export default function HoOrderEdit() {
                 disabled={forward.isPending}
                 onClick={() => forward.mutate()}
               >
-                Save & Forward to Admin
+                Save & Forward to Factory
               </button>
             </>
           )}
@@ -170,21 +171,21 @@ export default function HoOrderEdit() {
         </div>
       )}
 
+      {order.ho_note && (
+        <div className="card p-3 md:p-4 border-l-4 border-amber-400">
+          <div className="text-xs uppercase text-amber-700 font-medium mb-1">Head office note</div>
+          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.ho_note}</p>
+        </div>
+      )}
+
       <div className="card p-3 md:p-4">
-        <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1">Head office note</label>
+        <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1">Admin note</label>
         {editable ? (
           <textarea className="input text-sm" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
         ) : (
-          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.ho_note || "—"}</p>
+          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.admin_note || "—"}</p>
         )}
       </div>
-
-      {order.admin_note && order.status !== "SUBMITTED_TO_HO" && (
-        <div className="card p-3 md:p-4 border-l-4 border-orange-400">
-          <div className="text-xs uppercase text-orange-700 font-medium mb-1">Admin note</div>
-          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.admin_note}</p>
-        </div>
-      )}
 
       {(order.status === "COMPLETED" || order.status === "FACTORY_RESPONDED") && (
         <div className="card p-3 md:p-4 border-l-4 border-emerald-500">

@@ -5,7 +5,7 @@ def _h(t: str) -> dict:
     return auth(t)
 
 
-def test_full_three_way_workflow(client, seed, tokens):
+def test_full_four_way_workflow(client, seed, tokens):
     product_id = seed["product"].id
 
     # Customer creates a draft order
@@ -54,8 +54,32 @@ def test_full_three_way_workflow(client, seed, tokens):
     assert items[(product_id, "100ml")]["ho_qty"] == 3
     assert items[(product_id, "50ml")]["ho_qty"] == 0
 
-    # HO forwards to factory
+    # HO forwards to admin
     r = client.post(f"/orders/{order_id}/forward", headers=_h(tokens["ho"]))
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "SUBMITTED_TO_ADMIN"
+    assert r.json()["ho_reviewer_name"] == "HO"
+
+    # Admin sees it pending
+    r = client.get("/orders", params={"status": "SUBMITTED_TO_ADMIN"}, headers=_h(tokens["admin"]))
+    assert any(o["id"] == order_id for o in r.json())
+
+    # Admin edits and forwards to factory
+    r = client.patch(
+        f"/orders/{order_id}/admin",
+        headers=_h(tokens["admin"]),
+        json={
+            "items": [
+                {"product_id": product_id, "size_label": "30ml", "qty": 1},
+                {"product_id": product_id, "size_label": "100ml", "qty": 2},
+            ],
+            "admin_note": "Adjusted by admin",
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["admin_note"] == "Adjusted by admin"
+
+    r = client.post(f"/orders/{order_id}/admin-forward", headers=_h(tokens["admin"]))
     assert r.status_code == 200, r.text
     assert r.json()["status"] == "HO_FORWARDED"
 
@@ -63,7 +87,7 @@ def test_full_three_way_workflow(client, seed, tokens):
     r = client.get("/orders", params={"status": "HO_FORWARDED"}, headers=_h(tokens["factory"]))
     assert any(o["id"] == order_id for o in r.json())
 
-    # Factory can't respond to items HO did not approve
+    # Factory can't respond to items admin did not approve
     r = client.post(
         f"/orders/{order_id}/respond",
         headers=_h(tokens["factory"]),
@@ -95,7 +119,7 @@ def test_full_three_way_workflow(client, seed, tokens):
     assert r.status_code == 200, r.text
     assert r.json()["status"] == "COMPLETED"
 
-    # Customer + HO received notifications
+    # Customer + HO + Admin received notifications
     r = client.get("/notifications", headers=_h(tokens["customer"]))
     types = {n["type"] for n in r.json()}
     assert "ORDER_RESPONDED" in types
@@ -103,6 +127,10 @@ def test_full_three_way_workflow(client, seed, tokens):
     r = client.get("/notifications", headers=_h(tokens["ho"]))
     types = {n["type"] for n in r.json()}
     assert {"ORDER_SUBMITTED", "ORDER_RESPONDED"}.issubset(types)
+
+    r = client.get("/notifications", headers=_h(tokens["admin"]))
+    types = {n["type"] for n in r.json()}
+    assert {"ORDER_SUBMITTED", "ORDER_FORWARDED", "ORDER_RESPONDED"}.issubset(types)
 
 
 def test_role_permissions(client, seed, tokens):
@@ -128,7 +156,7 @@ def test_role_permissions(client, seed, tokens):
     r = client.post(f"/orders/{order_id}/submit", headers=_h(tokens["factory"]))
     assert r.status_code == 403
 
-    # Customer can't see HO dashboards
+    # Customer can't see dashboards
     r = client.get("/orders/kpis", headers=_h(tokens["customer"]))
     assert r.status_code == 403
 
@@ -138,6 +166,14 @@ def test_role_permissions(client, seed, tokens):
 
     # But customer can
     r = client.get(f"/orders/{order_id}", headers=_h(tokens["customer"]))
+    assert r.status_code == 200
+
+    # HO cannot manage users anymore
+    r = client.get("/users", headers=_h(tokens["ho"]))
+    assert r.status_code == 403
+
+    # Admin can manage users
+    r = client.get("/users", headers=_h(tokens["admin"]))
     assert r.status_code == 200
 
 
@@ -161,7 +197,7 @@ def test_cannot_forward_without_ho_qty(client, seed, tokens):
     assert r.status_code == 400
 
 
-def test_reject_flow(client, seed, tokens):
+def test_ho_reject_notifies_customer_and_admin(client, seed, tokens):
     product_id = seed["product"].id
     r = client.post(
         "/orders",
@@ -179,4 +215,38 @@ def test_reject_flow(client, seed, tokens):
     assert r.json()["status"] == "REJECTED"
 
     r = client.get("/notifications", headers=_h(tokens["customer"]))
+    assert any(n["type"] == "ORDER_REJECTED" for n in r.json())
+
+    r = client.get("/notifications", headers=_h(tokens["admin"]))
+    assert any(n["type"] == "ORDER_REJECTED" for n in r.json())
+
+
+def test_admin_reject_notifies_ho_and_customer(client, seed, tokens):
+    product_id = seed["product"].id
+    r = client.post(
+        "/orders",
+        headers=_h(tokens["customer"]),
+        json={"items": [{"product_id": product_id, "size_label": "30ml", "qty": 1}]},
+    )
+    order_id = r.json()["id"]
+    client.post(f"/orders/{order_id}/submit", headers=_h(tokens["customer"]))
+    client.patch(
+        f"/orders/{order_id}/ho",
+        headers=_h(tokens["ho"]),
+        json={"items": [{"product_id": product_id, "size_label": "30ml", "qty": 1}]},
+    )
+    client.post(f"/orders/{order_id}/forward", headers=_h(tokens["ho"]))
+
+    r = client.post(
+        f"/orders/{order_id}/reject",
+        headers=_h(tokens["admin"]),
+        json={"reason": "Not approved"},
+    )
+    assert r.status_code == 200
+    assert r.json()["status"] == "REJECTED"
+
+    r = client.get("/notifications", headers=_h(tokens["customer"]))
+    assert any(n["type"] == "ORDER_REJECTED" for n in r.json())
+
+    r = client.get("/notifications", headers=_h(tokens["ho"]))
     assert any(n["type"] == "ORDER_REJECTED" for n in r.json())

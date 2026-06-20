@@ -17,19 +17,19 @@ from app.schemas.user import (
 
 router = APIRouter(tags=["users"])
 
-ho_only = require_role(UserRole.HEAD_OFFICE)
+admin_only = require_role(UserRole.ADMIN)
 
 
 # ---------- Branches ----------
 
 @router.get("/branches", response_model=list[BranchRead])
-def list_branches(db: Session = Depends(get_db), _: User = Depends(ho_only)) -> list[BranchRead]:
+def list_branches(db: Session = Depends(get_db), _: User = Depends(admin_only)) -> list[BranchRead]:
     rows = db.execute(select(Branch).order_by(Branch.name)).scalars().all()
     return [BranchRead.model_validate(r) for r in rows]
 
 
 @router.post("/branches", response_model=BranchRead, status_code=status.HTTP_201_CREATED)
-def create_branch(body: BranchCreate, db: Session = Depends(get_db), _: User = Depends(ho_only)) -> BranchRead:
+def create_branch(body: BranchCreate, db: Session = Depends(get_db), _: User = Depends(admin_only)) -> BranchRead:
     if db.execute(select(Branch).where(Branch.code == body.code)).scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Branch code already exists")
     branch = Branch(**body.model_dump())
@@ -44,7 +44,7 @@ def update_branch(
     branch_id: int,
     body: BranchUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(ho_only),
+    _: User = Depends(admin_only),
 ) -> BranchRead:
     branch = db.get(Branch, branch_id)
     if not branch:
@@ -59,7 +59,7 @@ def update_branch(
 # ---------- Users ----------
 
 @router.get("/users", response_model=list[UserRead])
-def list_users(db: Session = Depends(get_db), _: User = Depends(ho_only)) -> list[UserRead]:
+def list_users(db: Session = Depends(get_db), _: User = Depends(admin_only)) -> list[UserRead]:
     rows = db.execute(
         select(User).options(selectinload(User.branch)).order_by(User.name)
     ).scalars().all()
@@ -67,7 +67,12 @@ def list_users(db: Session = Depends(get_db), _: User = Depends(ho_only)) -> lis
 
 
 @router.post("/users", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-def create_user(body: UserCreate, db: Session = Depends(get_db), _: User = Depends(ho_only)) -> UserRead:
+def create_user(body: UserCreate, db: Session = Depends(get_db), _: User = Depends(admin_only)) -> UserRead:
+    if body.role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=403,
+            detail="Admin users cannot be created via API. Use bootstrap_admin.",
+        )
     if db.execute(select(User).where(User.email == body.email)).scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Email already in use")
     if body.role == UserRole.CUSTOMER and body.branch_id is None:
@@ -94,25 +99,29 @@ def update_user(
     user_id: int,
     body: UserUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(ho_only),
+    _: User = Depends(admin_only),
 ) -> UserRead:
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     data = body.model_dump(exclude_unset=True)
-    
-    # Handle email update - check uniqueness
+
+    if data.get("role") == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=403,
+            detail="Admin role cannot be assigned via API. Use bootstrap_admin.",
+        )
+
     if "email" in data and data["email"]:
         existing = db.execute(select(User).where(User.email == data["email"], User.id != user_id)).scalar_one_or_none()
         if existing:
             raise HTTPException(status_code=409, detail="Email already in use")
-    
-    # Handle password update
+
     if "password" in data and data["password"]:
         user.password_hash = hash_password(data.pop("password"))
     elif "password" in data:
         data.pop("password")
-    
+
     for k, v in data.items():
         setattr(user, k, v)
     db.commit()

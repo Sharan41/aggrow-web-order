@@ -14,6 +14,7 @@ from app.models.form_type import OrderFormType
 class OrderStatus(str, enum.Enum):
     DRAFT = "DRAFT"
     SUBMITTED_TO_HO = "SUBMITTED_TO_HO"
+    SUBMITTED_TO_ADMIN = "SUBMITTED_TO_ADMIN"
     HO_FORWARDED = "HO_FORWARDED"
     FACTORY_RESPONDED = "FACTORY_RESPONDED"
     COMPLETED = "COMPLETED"
@@ -24,8 +25,11 @@ class OrderEventAction(str, enum.Enum):
     CREATED = "CREATED"
     CUSTOMER_SUBMITTED = "CUSTOMER_SUBMITTED"
     HO_EDITED = "HO_EDITED"
-    HO_FORWARDED = "HO_FORWARDED"
+    HO_FORWARDED_TO_ADMIN = "HO_FORWARDED_TO_ADMIN"
     HO_REJECTED = "HO_REJECTED"
+    ADMIN_EDITED = "ADMIN_EDITED"
+    ADMIN_FORWARDED = "ADMIN_FORWARDED"
+    ADMIN_REJECTED = "ADMIN_REJECTED"
     FACTORY_RESPONDED = "FACTORY_RESPONDED"
     COMPLETED = "COMPLETED"
 
@@ -45,10 +49,16 @@ class Order(Base):
 
     customer_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     ho_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    admin_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     factory_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    ho_reviewer_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ho_forwarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    admin_forwarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     factory_responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -57,6 +67,7 @@ class Order(Base):
     )
 
     customer: Mapped["User"] = relationship(back_populates="orders", foreign_keys=[customer_id])  # noqa: F821
+    ho_reviewer: Mapped["User | None"] = relationship(foreign_keys=[ho_reviewer_id])  # noqa: F821
     branch: Mapped["Branch | None"] = relationship(back_populates="orders")  # noqa: F821
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
     product_remarks: Mapped[list["OrderProductRemark"]] = relationship(

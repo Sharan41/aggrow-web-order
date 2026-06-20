@@ -1,4 +1,4 @@
-"""Create or reset the bootstrap Head Office admin user.
+"""Create or reset the bootstrap Admin user.
 
 Usage::
 
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import sys
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.core.db import SessionLocal
 from app.core.security import hash_password
@@ -22,26 +22,47 @@ def main(argv: list[str] | None = None) -> None:
             "Usage: python -m app.db.bootstrap_admin <email> <password> [name]"
         )
     email, password = argv[0], argv[1]
-    name = argv[2] if len(argv) > 2 else "Head Office Admin"
+    name = argv[2] if len(argv) > 2 else "Admin"
 
     with SessionLocal() as db:
         existing = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+        other_admin_count = db.execute(
+            select(func.count()).select_from(User).where(
+                User.role == UserRole.ADMIN,
+                User.email != email,
+            )
+        ).scalar_one()
+
         if existing:
-            existing.password_hash = hash_password(password)
-            existing.name = name
-            existing.role = UserRole.HEAD_OFFICE
-            existing.active = True
-            print(f"Updated existing user {email} as HEAD_OFFICE admin.")
+            if existing.role == UserRole.ADMIN:
+                existing.password_hash = hash_password(password)
+                existing.name = name
+                existing.active = True
+                print(f"Updated existing admin user {email}.")
+            else:
+                if other_admin_count > 0:
+                    raise SystemExit(
+                        "Another admin user already exists. Remove or demote it before promoting this account."
+                    )
+                existing.password_hash = hash_password(password)
+                existing.name = name
+                existing.role = UserRole.ADMIN
+                existing.active = True
+                print(f"Promoted existing user {email} to ADMIN.")
         else:
+            if other_admin_count > 0:
+                raise SystemExit(
+                    "Another admin user already exists. Only one admin account is allowed."
+                )
             user = User(
                 email=email,
                 password_hash=hash_password(password),
                 name=name,
-                role=UserRole.HEAD_OFFICE,
+                role=UserRole.ADMIN,
                 active=True,
             )
             db.add(user)
-            print(f"Created HEAD_OFFICE admin {email}.")
+            print(f"Created ADMIN user {email}.")
         db.commit()
 
 

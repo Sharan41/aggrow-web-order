@@ -1,10 +1,11 @@
-export type UserRole = "CUSTOMER" | "HEAD_OFFICE" | "FACTORY";
+export type UserRole = "CUSTOMER" | "HEAD_OFFICE" | "ADMIN" | "FACTORY";
 
 export type OrderFormType = "AG_GROW" | "SULFAG";
 
 export type OrderStatus =
   | "DRAFT"
   | "SUBMITTED_TO_HO"
+  | "SUBMITTED_TO_ADMIN"
   | "HO_FORWARDED"
   | "FACTORY_RESPONDED"
   | "COMPLETED"
@@ -96,7 +97,10 @@ export interface OrderSummary {
   created_at: string;
   submitted_at: string | null;
   ho_forwarded_at: string | null;
+  admin_forwarded_at: string | null;
   factory_responded_at: string | null;
+  ho_reviewer_id: number | null;
+  ho_reviewer_name: string | null;
   item_count: number;
   order_form_type: OrderFormType;
 }
@@ -110,11 +114,15 @@ export interface OrderDetail {
   status: OrderStatus;
   customer_note: string | null;
   ho_note: string | null;
+  admin_note: string | null;
   factory_note: string | null;
   created_at: string;
   submitted_at: string | null;
   ho_forwarded_at: string | null;
+  admin_forwarded_at: string | null;
   factory_responded_at: string | null;
+  ho_reviewer_id: number | null;
+  ho_reviewer_name: string | null;
   order_form_type: OrderFormType;
   items: OrderItem[];
   product_remarks: ProductRemark[];
@@ -124,6 +132,7 @@ export interface OrderDetail {
 export interface DashboardKPI {
   draft: number;
   submitted_to_ho: number;
+  submitted_to_admin: number;
   ho_forwarded: number;
   factory_responded: number;
   completed: number;

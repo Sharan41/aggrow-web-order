@@ -30,6 +30,8 @@ export default function NotificationsPage() {
 
   const orderPrefix = user?.role === "HEAD_OFFICE"
     ? "/ho/orders"
+    : user?.role === "ADMIN"
+    ? "/admin/orders"
     : user?.role === "FACTORY"
     ? "/factory/orders"
     : "/customer/orders";

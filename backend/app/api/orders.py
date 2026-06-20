@@ -6,6 +6,7 @@ from app.core.db import get_db
 from app.core.deps import get_current_user, require_role
 from app.models import Order, OrderItem, OrderStatus, Product, User, UserRole
 from app.schemas.order import (
+    AdminEditBody,
     CreateOrderBody,
     DashboardKPI,
     FactoryRespondBody,
@@ -50,12 +51,13 @@ def list_orders(
 @router.get("/kpis", response_model=DashboardKPI)
 def kpis(
     db: Session = Depends(get_db),
-    user: User = Depends(require_role(UserRole.HEAD_OFFICE)),
+    user: User = Depends(require_role(UserRole.HEAD_OFFICE, UserRole.ADMIN)),
 ) -> DashboardKPI:
     counts = dict(db.execute(select(Order.status, func.count()).group_by(Order.status)).all())
     return DashboardKPI(
         draft=counts.get(OrderStatus.DRAFT, 0),
         submitted_to_ho=counts.get(OrderStatus.SUBMITTED_TO_HO, 0),
+        submitted_to_admin=counts.get(OrderStatus.SUBMITTED_TO_ADMIN, 0),
         ho_forwarded=counts.get(OrderStatus.HO_FORWARDED, 0),
         factory_responded=counts.get(OrderStatus.FACTORY_RESPONDED, 0),
         completed=counts.get(OrderStatus.COMPLETED, 0),
@@ -95,6 +97,7 @@ def get_order(
             selectinload(Order.events),
             selectinload(Order.customer),
             selectinload(Order.branch),
+            selectinload(Order.ho_reviewer),
         )
         .where(Order.id == order_id)
     ).scalar_one_or_none()
@@ -151,14 +154,40 @@ def forward_order(
     return OrderDetail.from_model(order, viewer_role=user.role)
 
 
+@router.patch("/{order_id}/admin", response_model=OrderDetail)
+def admin_edit_order(
+    order_id: int,
+    body: AdminEditBody,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role(UserRole.ADMIN)),
+) -> OrderDetail:
+    items = _to_item_inputs(body.items) if body.items is not None else None
+    remarks = _to_remark_inputs(body.product_remarks) if body.product_remarks is not None else None
+    order = wf.admin_edit(db, order_id, user, items, body.admin_note, remarks)
+    return OrderDetail.from_model(order, viewer_role=user.role)
+
+
+@router.post("/{order_id}/admin-forward", response_model=OrderDetail)
+def admin_forward_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role(UserRole.ADMIN)),
+) -> OrderDetail:
+    order = wf.admin_forward(db, order_id, user)
+    return OrderDetail.from_model(order, viewer_role=user.role)
+
+
 @router.post("/{order_id}/reject", response_model=OrderDetail)
 def reject_order(
     order_id: int,
     body: HoRejectBody,
     db: Session = Depends(get_db),
-    user: User = Depends(require_role(UserRole.HEAD_OFFICE)),
+    user: User = Depends(require_role(UserRole.HEAD_OFFICE, UserRole.ADMIN)),
 ) -> OrderDetail:
-    order = wf.ho_reject(db, order_id, user, body.reason)
+    if user.role == UserRole.HEAD_OFFICE:
+        order = wf.ho_reject(db, order_id, user, body.reason)
+    else:
+        order = wf.admin_reject(db, order_id, user, body.reason)
     return OrderDetail.from_model(order, viewer_role=user.role)
 
 
@@ -186,7 +215,7 @@ def factory_respond_order(
 def delete_order(
     order_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(require_role(UserRole.HEAD_OFFICE)),
+    user: User = Depends(require_role(UserRole.HEAD_OFFICE, UserRole.ADMIN)),
 ) -> None:
     order = db.execute(select(Order).where(Order.id == order_id)).scalar_one_or_none()
     if not order:

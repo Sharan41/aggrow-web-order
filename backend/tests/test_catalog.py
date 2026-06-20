@@ -24,11 +24,27 @@ def test_catalog_customer_cannot_write(client, seed, tokens):
     assert r.status_code == 403
 
 
-def test_ho_can_add_product(client, seed, tokens):
+def test_ho_cannot_write_catalog(client, seed, tokens):
     group_id = seed["group"].id
     r = client.post(
         "/catalog/products",
         headers=auth(tokens["ho"]),
+        json={
+            "packing_group_id": group_id,
+            "s_no": 2,
+            "name": "New product",
+            "packing_type": "PET",
+            "available_sizes": ["30ml", "100ml"],
+        },
+    )
+    assert r.status_code == 403
+
+
+def test_admin_can_add_product(client, seed, tokens):
+    group_id = seed["group"].id
+    r = client.post(
+        "/catalog/products",
+        headers=auth(tokens["admin"]),
         json={
             "packing_group_id": group_id,
             "s_no": 2,
@@ -45,7 +61,7 @@ def test_product_invalid_size_rejected(client, seed, tokens):
     group_id = seed["group"].id
     r = client.post(
         "/catalog/products",
-        headers=auth(tokens["ho"]),
+        headers=auth(tokens["admin"]),
         json={
             "packing_group_id": group_id,
             "s_no": 3,

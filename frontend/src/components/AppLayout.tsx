@@ -14,8 +14,15 @@ const NAVS = {
     { to: "/ho/pending", label: "Pending Approvals" },
     { to: "/ho/orders", label: "All Orders" },
     { to: "/ho/factory", label: "Factory Responses" },
-    { to: "/ho/users", label: "Users & Branches" },
-    { to: "/ho/catalog", label: "Catalog" },
+    { to: "/notifications", label: "Notifications" },
+  ],
+  ADMIN: [
+    { to: "/admin/dashboard", label: "Dashboard" },
+    { to: "/admin/pending", label: "Pending Approvals" },
+    { to: "/admin/orders", label: "All Orders" },
+    { to: "/admin/factory", label: "Factory Responses" },
+    { to: "/admin/users", label: "Users & Branches" },
+    { to: "/admin/catalog", label: "Catalog" },
     { to: "/notifications", label: "Notifications" },
   ],
   FACTORY: [

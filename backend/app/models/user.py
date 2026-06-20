@@ -10,6 +10,7 @@ from app.core.db import Base
 class UserRole(str, enum.Enum):
     CUSTOMER = "CUSTOMER"
     HEAD_OFFICE = "HEAD_OFFICE"
+    ADMIN = "ADMIN"
     FACTORY = "FACTORY"
 
 

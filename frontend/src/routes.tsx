@@ -13,6 +13,9 @@ import HoOrderEdit from "./pages/headOffice/OrderEdit";
 import { HoAllOrders, HoFactoryResponses, HoPending } from "./pages/headOffice/OrdersList";
 import HoUsers from "./pages/headOffice/Users";
 import HoCatalog from "./pages/headOffice/Catalog";
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminOrderEdit from "./pages/admin/OrderEdit";
+import { AdminAllOrders, AdminFactoryResponses, AdminPending } from "./pages/admin/OrdersList";
 import { FactoryHistory, FactoryPending } from "./pages/factory/PendingOrders";
 import FactoryOrderRespond from "./pages/factory/OrderRespond";
 import NotificationsPage from "./pages/Notifications";
@@ -115,7 +118,7 @@ export function AppRoutes() {
           path="/ho/users"
           element={
             <RoleRoute roles={["HEAD_OFFICE"]}>
-              <HoUsers />
+              <Navigate to="/ho/dashboard" replace />
             </RoleRoute>
           }
         />
@@ -123,6 +126,63 @@ export function AppRoutes() {
           path="/ho/catalog"
           element={
             <RoleRoute roles={["HEAD_OFFICE"]}>
+              <Navigate to="/ho/dashboard" replace />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <RoleRoute roles={["ADMIN"]}>
+              <AdminDashboard />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/pending"
+          element={
+            <RoleRoute roles={["ADMIN"]}>
+              <AdminPending />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/orders"
+          element={
+            <RoleRoute roles={["ADMIN"]}>
+              <AdminAllOrders />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/orders/:id"
+          element={
+            <RoleRoute roles={["ADMIN"]}>
+              <AdminOrderEdit />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/factory"
+          element={
+            <RoleRoute roles={["ADMIN"]}>
+              <AdminFactoryResponses />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RoleRoute roles={["ADMIN"]}>
+              <HoUsers />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/catalog"
+          element={
+            <RoleRoute roles={["ADMIN"]}>
               <HoCatalog />
             </RoleRoute>
           }
