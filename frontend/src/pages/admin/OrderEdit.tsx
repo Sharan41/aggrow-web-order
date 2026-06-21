@@ -91,6 +91,17 @@ export default function AdminOrderEdit() {
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to reject", "error"),
   });
 
+  const revoke = useMutation({
+    mutationFn: () => ordersApi.revoke(orderId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["order", orderId] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      qc.invalidateQueries({ queryKey: ["kpis"] });
+      showToast("Order restored to live workflow");
+    },
+    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to revoke", "error"),
+  });
+
   const deleteOrder = useMutation({
     mutationFn: () => ordersApi.delete(orderId),
     onSuccess: () => {
@@ -106,6 +117,7 @@ export default function AdminOrderEdit() {
 
   const editable = order.status === "SUBMITTED_TO_ADMIN";
   const canDelete = order.status === "COMPLETED";
+  const canRevoke = order.status === "REJECTED";
 
   const handleDelete = () => {
     if (window.confirm(`Are you sure you want to delete order #${order.id}? This action cannot be undone.`)) {
@@ -123,7 +135,7 @@ export default function AdminOrderEdit() {
           <div className="mt-1 text-slate-500 text-xs md:text-sm flex gap-2 items-center flex-wrap">
             <StatusBadge status={order.status} />
             <FormTypeBadge type={order.order_form_type} />
-            {order.branch_name && <span>Branch: {order.branch_name}</span>}
+            {order.branch_name && <span>Location: {order.branch_name}</span>}
             {order.ho_reviewer_name && <span>Head Office: {order.ho_reviewer_name}</span>}
           </div>
         </div>
@@ -151,6 +163,19 @@ export default function AdminOrderEdit() {
                 Save & Forward to Factory
               </button>
             </>
+          )}
+          {canRevoke && (
+            <button
+              className="btn-primary text-sm"
+              disabled={revoke.isPending}
+              onClick={() => {
+                if (window.confirm(`Restore order #${order.id} to live workflow?`)) {
+                  revoke.mutate();
+                }
+              }}
+            >
+              {revoke.isPending ? "Restoring…" : "Revoke Rejection"}
+            </button>
           )}
           {canDelete && (
             <button
@@ -201,6 +226,7 @@ export default function AdminOrderEdit() {
         onChange={editable ? setCells : undefined}
         onRemarksChange={editable ? setRemarks : undefined}
         mode={editable ? "ho-edit" : "ho-view"}
+        showPrint={!editable}
       />
     </div>
   );

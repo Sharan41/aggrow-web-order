@@ -191,6 +191,16 @@ def reject_order(
     return OrderDetail.from_model(order, viewer_role=user.role)
 
 
+@router.post("/{order_id}/revoke", response_model=OrderDetail)
+def revoke_rejected_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role(UserRole.ADMIN)),
+) -> OrderDetail:
+    order = wf.admin_revoke_rejection(db, order_id, user)
+    return OrderDetail.from_model(order, viewer_role=user.role)
+
+
 @router.post("/{order_id}/respond", response_model=OrderDetail)
 def factory_respond_order(
     order_id: int,
@@ -215,7 +225,7 @@ def factory_respond_order(
 def delete_order(
     order_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(require_role(UserRole.HEAD_OFFICE, UserRole.ADMIN)),
+    user: User = Depends(require_role(UserRole.ADMIN)),
 ) -> None:
     order = db.execute(select(Order).where(Order.id == order_id)).scalar_one_or_none()
     if not order:

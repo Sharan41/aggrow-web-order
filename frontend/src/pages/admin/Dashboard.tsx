@@ -66,7 +66,7 @@ export default function AdminDashboard() {
             <tr>
               <th className="text-left px-3 py-2">#</th>
               <th className="text-left px-3 py-2">Customer</th>
-              <th className="text-left px-3 py-2">Branch</th>
+                <th className="text-left px-3 py-2">Location</th>
               <th className="text-left px-3 py-2">Head Office</th>
               <th className="text-left px-3 py-2">Order form</th>
               <th className="text-left px-3 py-2">Status</th>

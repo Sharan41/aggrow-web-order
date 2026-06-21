@@ -31,7 +31,7 @@ function List({ title, statuses }: { title: string; statuses: OrderStatus[] }) {
               <tr>
                 <th className="text-left px-3 py-2">#</th>
                 <th className="text-left px-3 py-2">Customer</th>
-                <th className="text-left px-3 py-2">Branch</th>
+                <th className="text-left px-3 py-2">Location</th>
                 <th className="text-left px-3 py-2">Status</th>
                 <th className="text-left px-3 py-2">Items</th>
                 <th className="text-left px-3 py-2">Forwarded</th>

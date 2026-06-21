@@ -91,27 +91,9 @@ export default function HoOrderEdit() {
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to reject", "error"),
   });
 
-  const deleteOrder = useMutation({
-    mutationFn: () => ordersApi.delete(orderId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["orders"] });
-      qc.invalidateQueries({ queryKey: ["kpis"] });
-      showToast("Order deleted successfully");
-      navigate("/ho/orders");
-    },
-    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to delete order", "error"),
-  });
-
   if (!order || !catalog) return <div className="text-slate-500">Loading…</div>;
 
   const editable = order.status === "SUBMITTED_TO_HO";
-  const canDelete = order.status === "COMPLETED";
-
-  const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete order #${order.id}? This action cannot be undone.`)) {
-      deleteOrder.mutate();
-    }
-  };
 
   return (
     <div className="space-y-3 md:space-y-4 px-3 md:px-0">
@@ -123,7 +105,7 @@ export default function HoOrderEdit() {
           <div className="mt-1 text-slate-500 text-xs md:text-sm flex gap-2 items-center flex-wrap">
             <StatusBadge status={order.status} />
             <FormTypeBadge type={order.order_form_type} />
-            {order.branch_name && <span>Branch: {order.branch_name}</span>}
+            {order.branch_name && <span>Location: {order.branch_name}</span>}
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -150,15 +132,6 @@ export default function HoOrderEdit() {
                 Save & Forward to Admin
               </button>
             </>
-          )}
-          {canDelete && (
-            <button
-              className="btn-danger text-sm"
-              disabled={deleteOrder.isPending}
-              onClick={handleDelete}
-            >
-              Delete Order
-            </button>
           )}
         </div>
       </div>
@@ -200,6 +173,7 @@ export default function HoOrderEdit() {
         onChange={editable ? setCells : undefined}
         onRemarksChange={editable ? setRemarks : undefined}
         mode={editable ? "ho-edit" : "ho-view"}
+        showPrint={!editable}
       />
     </div>
   );

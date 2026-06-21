@@ -44,8 +44,8 @@ export default function FactoryOrderRespond() {
           return {
             product_id: i.product_id,
             size_label: i.size_label,
-            available: !!s?.factoryAvailable,
-            note: s?.factoryNote ?? null,
+            available: !!s?.factoryNote?.trim(),
+            note: s?.factoryNote?.trim() || null,
           };
         });
       return ordersApi.factoryRespond(orderId, { items, factory_note: note || null });
@@ -63,10 +63,10 @@ export default function FactoryOrderRespond() {
 
   const editable = order.status === "HO_FORWARDED";
   const needsResponse = order.items.filter((i) => i.ho_qty > 0);
-  const allAnswered = needsResponse.every(
-    (i) => cells[cellKey(i.product_id, i.size_label)]?.factoryAvailable !== null &&
-      cells[cellKey(i.product_id, i.size_label)]?.factoryAvailable !== undefined,
-  );
+  const allAnswered = needsResponse.every((i) => {
+    const note = cells[cellKey(i.product_id, i.size_label)]?.factoryNote?.trim();
+    return !!note;
+  });
 
   return (
     <div className="space-y-3 md:space-y-4 px-3 md:px-0">
@@ -78,7 +78,7 @@ export default function FactoryOrderRespond() {
           <div className="mt-1 text-slate-500 text-xs md:text-sm flex items-center gap-2 flex-wrap">
             <StatusBadge status={order.status} />
             <span>Customer: {order.customer_name}</span>
-            {order.branch_name && <span>· Branch: {order.branch_name}</span>}
+            {order.branch_name && <span>· Location: {order.branch_name}</span>}
           </div>
         </div>
         {editable && (
@@ -110,9 +110,9 @@ export default function FactoryOrderRespond() {
 
       <div className="text-xs md:text-sm text-slate-500">
         {editable
-          ? `Respond ✓/✗ for each highlighted item. ${needsResponse.length - needsResponse.filter((i) => {
-              const v = cells[cellKey(i.product_id, i.size_label)]?.factoryAvailable;
-              return v === true || v === false;
+          ? `Enter a value for each highlighted item. ${needsResponse.length - needsResponse.filter((i) => {
+              const note = cells[cellKey(i.product_id, i.size_label)]?.factoryNote?.trim();
+              return !!note;
             }).length} remaining.`
           : "This order has been responded to. Summary below."}
       </div>
@@ -121,8 +121,9 @@ export default function FactoryOrderRespond() {
         catalog={catalog}
         cells={cells}
         onChange={editable ? setCells : undefined}
-        mode={editable ? "factory-respond" : "view"}
+        mode={editable ? "factory-respond" : "factory-view"}
         hideRemarks
+        showPrint={!editable}
       />
     </div>
   );

@@ -1,9 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ordersApi } from "../../api/orders";
 import { StatusBadge } from "../../components/StatusBadge";
 import { FormTypeBadge } from "../../components/FormTypeBadge";
-import { useToast } from "../../components/Toast";
 import type { OrderSummary } from "../../types";
 
 function KpiCard({ label, value, to }: { label: string; value: number; to?: string }) {
@@ -17,26 +16,8 @@ function KpiCard({ label, value, to }: { label: string; value: number; to?: stri
 }
 
 export default function HoDashboard() {
-  const qc = useQueryClient();
-  const { showToast } = useToast();
   const { data: kpis } = useQuery({ queryKey: ["kpis"], queryFn: () => ordersApi.kpis() });
   const { data: recent } = useQuery({ queryKey: ["orders", "recent"], queryFn: () => ordersApi.list() });
-
-  const deleteMutation = useMutation({
-    mutationFn: (orderId: number) => ordersApi.delete(orderId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["orders"] });
-      qc.invalidateQueries({ queryKey: ["kpis"] });
-      showToast("Order deleted successfully");
-    },
-    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to delete order", "error"),
-  });
-
-  const handleDelete = (order: OrderSummary) => {
-    if (window.confirm(`Are you sure you want to delete order #${order.id}? This action cannot be undone.`)) {
-      deleteMutation.mutate(order.id);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -45,7 +26,7 @@ export default function HoDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <KpiCard label="Total" value={kpis?.total ?? 0} to="/ho/orders" />
         <KpiCard label="Draft" value={kpis?.draft ?? 0} />
-        <KpiCard label="Pending approval" value={kpis?.submitted_to_ho ?? 0} to="/ho/pending" />
+        <KpiCard label="With HO" value={kpis?.submitted_to_ho ?? 0} to="/ho/pending" />
         <KpiCard label="With admin" value={kpis?.submitted_to_admin ?? 0} />
         <KpiCard label="In factory" value={kpis?.ho_forwarded ?? 0} />
         <KpiCard label="Factory responded" value={kpis?.factory_responded ?? 0} to="/ho/factory" />
@@ -66,7 +47,7 @@ export default function HoDashboard() {
             <tr>
               <th className="text-left px-3 py-2">#</th>
               <th className="text-left px-3 py-2">Customer</th>
-              <th className="text-left px-3 py-2">Branch</th>
+              <th className="text-left px-3 py-2">Location</th>
               <th className="text-left px-3 py-2">Order form</th>
               <th className="text-left px-3 py-2">Status</th>
               <th className="text-left px-3 py-2">Items</th>
@@ -89,21 +70,9 @@ export default function HoDashboard() {
                 <td className="px-3 py-2">{o.item_count}</td>
                 <td className="px-3 py-2">{new Date(o.created_at).toLocaleString()}</td>
                 <td className="px-3 py-2 text-right">
-                  <div className="flex gap-2 justify-end items-center">
-                    <Link to={`/ho/orders/${o.id}`} className="text-brand-700 hover:underline">
-                      Open
-                    </Link>
-                    {o.status === "COMPLETED" && (
-                      <button
-                        onClick={() => handleDelete(o)}
-                        disabled={deleteMutation.isPending}
-                        className="text-red-600 hover:text-red-800 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Delete order"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
+                  <Link to={`/ho/orders/${o.id}`} className="text-brand-700 hover:underline">
+                    Open
+                  </Link>
                 </td>
               </tr>
             ))}

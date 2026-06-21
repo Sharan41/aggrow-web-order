@@ -11,7 +11,7 @@ const NAVS = {
   ],
   HEAD_OFFICE: [
     { to: "/ho/dashboard", label: "Dashboard" },
-    { to: "/ho/pending", label: "Pending Approvals" },
+    { to: "/ho/pending", label: "With HO" },
     { to: "/ho/orders", label: "All Orders" },
     { to: "/ho/factory", label: "Factory Responses" },
     { to: "/notifications", label: "Notifications" },
@@ -21,7 +21,7 @@ const NAVS = {
     { to: "/admin/pending", label: "Pending Approvals" },
     { to: "/admin/orders", label: "All Orders" },
     { to: "/admin/factory", label: "Factory Responses" },
-    { to: "/admin/users", label: "Users & Branches" },
+    { to: "/admin/users", label: "Users & Locations" },
     { to: "/admin/catalog", label: "Catalog" },
     { to: "/notifications", label: "Notifications" },
   ],
@@ -80,7 +80,7 @@ export function AppLayout() {
           </button>
 
           <Link to="/" className="text-brand-700 font-semibold text-base md:text-lg">
-            AG Grow
+            AGRO PRODUCTS
           </Link>
 
           {/* Desktop navigation */}

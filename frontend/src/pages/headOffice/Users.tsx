@@ -20,7 +20,7 @@ export default function HoUsers() {
       usersApi.createBranch(body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["branches"] });
-      showToast("Branch created successfully");
+      showToast("Location created successfully");
     },
     onError: (err) => showToast(getApiErrorMessage(err), "error"),
   });
@@ -77,12 +77,12 @@ export default function HoUsers() {
 
   return (
     <div className="space-y-4 md:space-y-6 px-3 md:px-0">
-      <h1 className="text-xl md:text-2xl font-semibold">Users & Branches</h1>
+      <h1 className="text-xl md:text-2xl font-semibold">Users & Locations</h1>
 
       <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
         <div className="card p-3 md:p-4">
-          <h2 className="font-medium mb-3 text-base md:text-lg">Branches</h2>
-          <BranchForm
+          <h2 className="font-medium mb-3 text-base md:text-lg">Locations</h2>
+          <LocationForm
             isSubmitting={createBranch.isPending}
             onCreate={async (b) => {
               await createBranch.mutateAsync(b);
@@ -98,7 +98,7 @@ export default function HoUsers() {
                 </div>
               </div>
             ))}
-            {!branches?.length && <div className="text-sm text-slate-500 py-2">No branches yet.</div>}
+            {!branches?.length && <div className="text-sm text-slate-500 py-2">No locations yet.</div>}
           </div>
         </div>
 
@@ -174,7 +174,7 @@ export default function HoUsers() {
   );
 }
 
-function BranchForm({
+function LocationForm({
   onCreate,
   isSubmitting,
 }: {
@@ -222,8 +222,8 @@ function BranchForm({
         value={address}
         onChange={(e) => setAddress(e.target.value)}
       />
-      <button className="btn-primary text-sm" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Adding…" : "Add branch"}
+      <button className="btn-secondary text-sm" type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Adding…" : "Add location"}
       </button>
     </form>
   );
@@ -263,12 +263,6 @@ function UserForm({
           setFormError("Name, email, and password are required.");
           return;
         }
-        if (role === "CUSTOMER") {
-          if (branchId === "") {
-            setFormError("Customer users must have a branch selected.");
-            return;
-          }
-        }
         try {
           await onCreate({
             email: email.trim(),
@@ -276,7 +270,7 @@ function UserForm({
             name: name.trim(),
             mobile_number: mobile.trim() || null,
             role,
-            branch_id: role === "CUSTOMER" ? Number(branchId) : null,
+            branch_id: role === "CUSTOMER" && branchId !== "" ? Number(branchId) : null,
           });
           setEmail("");
           setPassword("");
@@ -319,7 +313,7 @@ function UserForm({
         onChange={(e) => setPassword(e.target.value)}
       />
       <select className="input text-sm" value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
-        <option value="CUSTOMER">Customer (Branch)</option>
+        <option value="CUSTOMER">User (Location)</option>
         <option value="HEAD_OFFICE">Head Office</option>
         <option value="FACTORY">Factory</option>
       </select>
@@ -329,7 +323,7 @@ function UserForm({
           value={branchId}
           onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : "")}
         >
-          <option value="">Select branch…</option>
+          <option value="">Select location (optional)…</option>
           {branches.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
@@ -385,10 +379,6 @@ function EditUserModal({
               setFormError("Name and email are required.");
               return;
             }
-            if (role === "CUSTOMER" && branchId === "") {
-              setFormError("Customer users must have a branch selected.");
-              return;
-            }
             try {
               await onSave({
                 email: email.trim(),
@@ -396,7 +386,7 @@ function EditUserModal({
                 mobile_number: mobile.trim() || null,
                 password: password.trim() || null,
                 role,
-                branch_id: role === "CUSTOMER" ? Number(branchId) : null,
+                branch_id: role === "CUSTOMER" && branchId !== "" ? Number(branchId) : null,
               });
             } catch (err) {
               setFormError(getApiErrorMessage(err));
@@ -453,20 +443,20 @@ function EditUserModal({
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
             <select className="input text-sm w-full" value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
-              <option value="CUSTOMER">Customer (Branch)</option>
+              <option value="CUSTOMER">User (Location)</option>
               <option value="HEAD_OFFICE">Head Office</option>
               <option value="FACTORY">Factory</option>
             </select>
           </div>
           {role === "CUSTOMER" && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Branch</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
               <select
                 className="input text-sm w-full"
                 value={branchId}
                 onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : "")}
               >
-                <option value="">Select branch…</option>
+                <option value="">Select location (optional)…</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}

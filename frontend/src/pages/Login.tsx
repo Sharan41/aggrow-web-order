@@ -30,7 +30,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-slate-100 p-4">
       <div className="card w-full max-w-sm p-6">
-        <h1 className="text-xl font-semibold text-brand-700 mb-1">AG Grow Order Portal</h1>
+        <h1 className="text-xl font-semibold text-brand-700 mb-1">AGRO PRODUCTS ORDER PORTAL</h1>
         <p className="text-sm text-slate-500 mb-6">Sign in to continue</p>
         <form onSubmit={onSubmit} className="space-y-4">
           <div>

@@ -25,3 +25,19 @@
     @apply inline-block px-2 py-0.5 text-xs font-medium rounded-full;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #order-form-print-area,
+  #order-form-print-area * {
+    visibility: visible;
+  }
+  #order-form-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

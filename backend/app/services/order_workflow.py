@@ -79,6 +79,7 @@ def _load_order(db: Session, order_id: int) -> Order:
             selectinload(Order.customer),
             selectinload(Order.branch),
             selectinload(Order.ho_reviewer),
+            selectinload(Order.events),
         )
         .where(Order.id == order_id)
     ).scalar_one_or_none()
@@ -382,6 +383,26 @@ def admin_reject(db: Session, order_id: int, actor: User, reason: str | None) ->
     order.admin_note = reason or order.admin_note
     _record_event(db, order, actor, OrderEventAction.ADMIN_REJECTED, {"reason": reason})
     notif.fan_out_admin_rejected(db, order)
+    db.commit()
+    return _load_order(db, order.id)
+
+
+def admin_revoke_rejection(db: Session, order_id: int, actor: User) -> Order:
+    if actor.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin only")
+    order = _load_order(db, order_id)
+    if order.status != OrderStatus.REJECTED:
+        raise HTTPException(status_code=400, detail="Only REJECTED orders can be revoked")
+    rejection_events = [
+        e
+        for e in order.events
+        if e.action in (OrderEventAction.HO_REJECTED, OrderEventAction.ADMIN_REJECTED)
+    ]
+    if rejection_events and rejection_events[-1].action == OrderEventAction.HO_REJECTED:
+        order.status = OrderStatus.SUBMITTED_TO_HO
+    else:
+        order.status = OrderStatus.SUBMITTED_TO_ADMIN
+    _record_event(db, order, actor, OrderEventAction.ADMIN_REVOKED)
     db.commit()
     return _load_order(db, order.id)
 

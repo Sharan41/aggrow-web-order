@@ -75,10 +75,8 @@ def create_user(body: UserCreate, db: Session = Depends(get_db), _: User = Depen
         )
     if db.execute(select(User).where(User.email == body.email)).scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Email already in use")
-    if body.role == UserRole.CUSTOMER and body.branch_id is None:
-        raise HTTPException(status_code=400, detail="Customer users must have a branch_id")
     if body.branch_id is not None and not db.get(Branch, body.branch_id):
-        raise HTTPException(status_code=400, detail="Branch not found")
+        raise HTTPException(status_code=400, detail="Location not found")
     user = User(
         email=body.email,
         password_hash=hash_password(body.password),

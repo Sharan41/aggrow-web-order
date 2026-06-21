@@ -1,7 +1,15 @@
 import { useMemo } from "react";
 import type { Catalog, OrderItem, PackingGroup, Product } from "../types";
 
-export type FormMode = "customer-edit" | "ho-edit" | "ho-view" | "factory-respond" | "customer-view-response" | "view";
+export type FormMode =
+  | "customer-edit"
+  | "ho-edit"
+  | "ho-view"
+  | "factory-respond"
+  | "customer-view-response"
+  | "customer-view-ordered"
+  | "factory-view"
+  | "view";
 
 interface CellState {
   customerQty: number;
@@ -112,6 +120,7 @@ interface Props {
   onChange?: (next: CellMap) => void;
   mode: FormMode;
   hideRemarks?: boolean;
+  showPrint?: boolean;
 }
 
 export function OrderFormTable({
@@ -122,27 +131,37 @@ export function OrderFormTable({
   onChange,
   mode,
   hideRemarks = false,
+  showPrint = false,
 }: Props) {
-  const readOnly = mode === "view" || mode === "ho-view" || mode === "customer-view-response" || !onChange;
+  const readOnly =
+    mode === "view" ||
+    mode === "ho-view" ||
+    mode === "customer-view-response" ||
+    mode === "customer-view-ordered" ||
+    mode === "factory-view" ||
+    !onChange;
   const showRemarks = !hideRemarks && mode !== "factory-respond";
   const remarksEditable =
     (mode === "customer-edit" || mode === "ho-edit") && !!onRemarksChange;
 
   // Determine which products to show (row filtering) based on mode
   const visibleProducts = useMemo(() => {
-    if (mode === "customer-edit" || mode === "view") return null;
+    if (mode === "customer-edit") return null;
     const set = new Set<number>();
     for (const [key, v] of Object.entries(cells)) {
       let include = false;
       if (mode === "ho-edit" || mode === "ho-view") {
-        // HO sees only rows where customer placed quantities
         include = v.customerQty > 0;
       } else if (mode === "factory-respond") {
-        // Factory sees only rows where HO placed quantities
         include = v.hoQty > 0;
       } else if (mode === "customer-view-response") {
-        // Customer sees only rows where factory responded
-        include = v.factoryAvailable !== null;
+        include = v.factoryAvailable !== null || !!(v.factoryNote?.trim());
+      } else if (mode === "customer-view-ordered") {
+        include = v.customerQty > 0;
+      } else if (mode === "factory-view") {
+        include =
+          v.hoQty > 0 &&
+          (v.factoryAvailable !== null || !!(v.factoryNote?.trim()));
       }
       if (include) {
         const pid = Number(key.split("::")[0]);
@@ -191,7 +210,15 @@ export function OrderFormTable({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
+      {showPrint && (
+        <div className="flex justify-end print:hidden">
+          <button type="button" className="btn-secondary text-sm" onClick={() => window.print()}>
+            Print table
+          </button>
+        </div>
+      )}
+      <div id="order-form-print-area" className="space-y-8">
       {catalog.categories.map((cat) => {
         const groups = cat.packing_groups.filter((pg) => {
           // For factory-respond, only show groups with at least one visible column
@@ -203,7 +230,9 @@ export function OrderFormTable({
           if (
             mode === "ho-edit" ||
             mode === "ho-view" ||
-            mode === "customer-view-response"
+            mode === "customer-view-response" ||
+            mode === "customer-view-ordered" ||
+            mode === "factory-view"
           ) {
             return pg.products.some((p) => visibleProducts?.has(p.id));
           }
@@ -234,6 +263,7 @@ export function OrderFormTable({
           </section>
         );
       })}
+      </div>
     </div>
   );
 }
@@ -278,7 +308,9 @@ function GroupTable({
       mode === "ho-edit" ||
       mode === "ho-view" ||
       mode === "factory-respond" ||
-      mode === "customer-view-response"
+      mode === "customer-view-response" ||
+      mode === "customer-view-ordered" ||
+      mode === "factory-view"
     ) {
       return visibleProducts?.has(p.id);
     }
@@ -295,7 +327,6 @@ function GroupTable({
         <table className="min-w-full border-collapse text-xs md:text-sm">
           <thead>
             <tr className="bg-slate-100">
-              <th className="border px-1 md:px-2 py-1 text-left w-10 md:w-12">S.No</th>
               <th className="border px-1 md:px-2 py-1 text-left min-w-[180px] md:min-w-[220px]">Product</th>
               <th className="border px-1 md:px-2 py-1 text-left w-20 md:w-24">Packing</th>
               {headers.map((h) => (
@@ -362,7 +393,6 @@ function ProductRow({
 
   return (
     <tr className="even:bg-slate-50">
-      <td className="border px-1 md:px-2 py-1 align-top text-xs md:text-sm">{product.s_no}</td>
       <td className="border px-1 md:px-2 py-1 align-top font-medium text-xs md:text-sm">{product.name}</td>
       <td className="border px-1 md:px-2 py-1 align-top text-slate-500 text-xs md:text-sm">
         {product.packing_type ?? "—"}
@@ -457,59 +487,39 @@ function CellEditor({ state, isAvailable, mode, readOnly, onChange }: CellEditor
   if (mode === "factory-respond") {
     const hoQty = state?.hoQty ?? 0;
     if (hoQty <= 0) return <span className="text-slate-300">—</span>;
-    const avail = state?.factoryAvailable;
     return (
       <div className="flex flex-col items-center gap-1">
         <div className="text-[10px] text-slate-500">qty: {hoQty}</div>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => onChange({ factoryAvailable: true, factoryNote: null })}
-            disabled={readOnly}
-            className={`px-1.5 py-0.5 text-xs rounded border ${
-              avail === true ? "bg-emerald-500 text-white border-emerald-600" : "bg-white border-slate-300"
-            }`}
-          >
-            ✓
-          </button>
-          <button
-            type="button"
-            onClick={() => onChange({ factoryAvailable: false })}
-            disabled={readOnly}
-            className={`px-1.5 py-0.5 text-xs rounded border ${
-              avail === false ? "bg-rose-500 text-white border-rose-600" : "bg-white border-slate-300"
-            }`}
-          >
-            ✗
-          </button>
-        </div>
-        {avail === false && (
-          <input
-            type="text"
-            placeholder="reason"
-            value={state?.factoryNote ?? ""}
-            onChange={(e) => onChange({ factoryNote: e.target.value })}
-            disabled={readOnly}
-            className="w-20 rounded border border-slate-300 bg-white px-1 py-0.5 text-[11px] text-center"
-          />
-        )}
+        <input
+          type="text"
+          placeholder="Enter value"
+          value={state?.factoryNote ?? ""}
+          onChange={(e) => {
+            const value = e.target.value;
+            onChange({
+              factoryNote: value,
+              factoryAvailable: value.trim() !== "" ? true : null,
+            });
+          }}
+          disabled={readOnly}
+          className="w-16 md:w-20 rounded border border-slate-300 bg-white px-1 py-0.5 text-xs md:text-sm text-center focus:ring-1 focus:ring-brand-500"
+        />
       </div>
     );
   }
-  if (mode === "customer-view-response") {
-    // Show factory response with original customer count
-    if (!state || state.factoryAvailable === null) return <span className="text-slate-300">—</span>;
+  if (mode === "customer-view-response" || mode === "factory-view") {
+    if (!state || (!state.factoryNote?.trim() && state.factoryAvailable === null)) {
+      return <span className="text-slate-300">—</span>;
+    }
     return (
       <div className="flex flex-col items-center gap-1 text-xs">
-        <div className="text-[10px] text-slate-400">ordered: {state.customerQty}</div>
-        <div className={`font-medium ${state.factoryAvailable ? "text-emerald-600" : "text-rose-600"}`}>
-          {state.factoryAvailable ? `✓ ${state.hoQty}` : "✗"}
-        </div>
-        {!state.factoryAvailable && state.factoryNote && (
-          <div className="text-[10px] text-slate-500 max-w-[80px] truncate" title={state.factoryNote}>
-            {state.factoryNote}
-          </div>
+        {mode === "customer-view-response" && (
+          <div className="text-[10px] text-slate-400">ordered: {state.customerQty}</div>
         )}
+        {mode === "factory-view" && (
+          <div className="text-[10px] text-slate-400">qty: {state.hoQty}</div>
+        )}
+        <div className="font-medium text-slate-800">{state.factoryNote?.trim() || "—"}</div>
       </div>
     );
   }
@@ -518,8 +528,9 @@ function CellEditor({ state, isAvailable, mode, readOnly, onChange }: CellEditor
   const parts: string[] = [];
   if (state.customerQty > 0) parts.push(`req ${state.customerQty}`);
   if (state.hoQty > 0) parts.push(`ho ${state.hoQty}`);
-  if (state.factoryAvailable === true) parts.push("✓");
-  if (state.factoryAvailable === false) parts.push(`✗${state.factoryNote ? ` (${state.factoryNote})` : ""}`);
+  if (state.factoryAvailable === true || state.factoryNote?.trim()) {
+    parts.push(state.factoryNote?.trim() || "filled");
+  }
   return parts.length > 0 ? (
     <div className="text-xs leading-tight">{parts.join(" · ")}</div>
   ) : (

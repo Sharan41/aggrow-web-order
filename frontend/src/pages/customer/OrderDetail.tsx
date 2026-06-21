@@ -75,7 +75,11 @@ export default function CustomerOrderDetail() {
 
   const isDraft = order.status === "DRAFT";
   const hasFactoryResponse = order.status === "FACTORY_RESPONDED" || order.status === "COMPLETED";
-  const mode = isDraft ? "customer-edit" : hasFactoryResponse ? "customer-view-response" : "view";
+  const mode = isDraft
+    ? "customer-edit"
+    : hasFactoryResponse
+      ? "customer-view-response"
+      : "customer-view-ordered";
 
   return (
     <div className="space-y-3 md:space-y-4 px-3 md:px-0">
@@ -134,6 +138,7 @@ export default function CustomerOrderDetail() {
         onChange={isDraft ? setCells : undefined}
         onRemarksChange={isDraft ? setRemarks : undefined}
         mode={mode}
+        showPrint={!isDraft}
       />
     </div>
   );
