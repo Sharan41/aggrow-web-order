@@ -5,6 +5,7 @@ export type FormMode =
   | "customer-edit"
   | "ho-edit"
   | "ho-view"
+  | "ho-view-response"
   | "factory-respond"
   | "customer-view-response"
   | "customer-view-ordered"
@@ -136,6 +137,7 @@ export function OrderFormTable({
   const readOnly =
     mode === "view" ||
     mode === "ho-view" ||
+    mode === "ho-view-response" ||
     mode === "customer-view-response" ||
     mode === "customer-view-ordered" ||
     mode === "factory-view" ||
@@ -152,6 +154,8 @@ export function OrderFormTable({
       let include = false;
       if (mode === "ho-edit" || mode === "ho-view") {
         include = v.customerQty > 0;
+      } else if (mode === "ho-view-response") {
+        include = v.hoQty > 0;
       } else if (mode === "factory-respond") {
         include = v.hoQty > 0;
       } else if (mode === "customer-view-response") {
@@ -230,6 +234,7 @@ export function OrderFormTable({
           if (
             mode === "ho-edit" ||
             mode === "ho-view" ||
+            mode === "ho-view-response" ||
             mode === "customer-view-response" ||
             mode === "customer-view-ordered" ||
             mode === "factory-view"
@@ -307,6 +312,7 @@ function GroupTable({
     if (
       mode === "ho-edit" ||
       mode === "ho-view" ||
+      mode === "ho-view-response" ||
       mode === "factory-respond" ||
       mode === "customer-view-response" ||
       mode === "customer-view-ordered" ||
@@ -507,7 +513,11 @@ function CellEditor({ state, isAvailable, mode, readOnly, onChange }: CellEditor
       </div>
     );
   }
-  if (mode === "customer-view-response" || mode === "factory-view") {
+  if (
+    mode === "customer-view-response" ||
+    mode === "ho-view-response" ||
+    mode === "factory-view"
+  ) {
     if (!state || (!state.factoryNote?.trim() && state.factoryAvailable === null)) {
       return <span className="text-slate-300">—</span>;
     }
@@ -516,10 +526,10 @@ function CellEditor({ state, isAvailable, mode, readOnly, onChange }: CellEditor
         {mode === "customer-view-response" && (
           <div className="text-[10px] text-slate-400">ordered: {state.customerQty}</div>
         )}
-        {mode === "factory-view" && (
+        {(mode === "factory-view" || mode === "ho-view-response") && (
           <div className="text-[10px] text-slate-400">qty: {state.hoQty}</div>
         )}
-        {mode === "customer-view-response" && (
+        {(mode === "customer-view-response" || mode === "ho-view-response") && (
           <div className="text-[10px] text-emerald-700 font-medium">factory</div>
         )}
         <div className="font-medium text-slate-800">{state.factoryNote?.trim() || "—"}</div>

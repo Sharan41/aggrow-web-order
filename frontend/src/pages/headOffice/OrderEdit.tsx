@@ -83,6 +83,8 @@ export default function HoOrderEdit() {
   if (!order || !catalog) return <div className="text-slate-500">Loading…</div>;
 
   const editable = order.status === "SUBMITTED_TO_HO";
+  const hasFactoryResponse = order.status === "FACTORY_RESPONDED" || order.status === "COMPLETED";
+  const tableMode = editable ? "ho-edit" : hasFactoryResponse ? "ho-view-response" : "ho-view";
 
   return (
     <div className="space-y-3 md:space-y-4 px-3 md:px-0">
@@ -151,7 +153,7 @@ export default function HoOrderEdit() {
         remarks={remarks}
         onChange={editable ? setCells : undefined}
         onRemarksChange={editable ? setRemarks : undefined}
-        mode={editable ? "ho-edit" : "ho-view"}
+        mode={tableMode}
         showPrint={!editable}
       />
     </div>

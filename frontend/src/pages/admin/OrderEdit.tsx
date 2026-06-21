@@ -106,6 +106,8 @@ export default function AdminOrderEdit() {
 
   const editable = order.status === "SUBMITTED_TO_ADMIN";
   const canDelete = order.status === "COMPLETED";
+  const hasFactoryResponse = order.status === "FACTORY_RESPONDED" || order.status === "COMPLETED";
+  const tableMode = editable ? "ho-edit" : hasFactoryResponse ? "ho-view-response" : "ho-view";
 
   const handleDelete = () => {
     if (window.confirm(`Are you sure you want to delete order #${order.id}? This action cannot be undone.`)) {
@@ -201,7 +203,7 @@ export default function AdminOrderEdit() {
         remarks={remarks}
         onChange={editable ? setCells : undefined}
         onRemarksChange={editable ? setRemarks : undefined}
-        mode={editable ? "ho-edit" : "ho-view"}
+        mode={tableMode}
         showPrint={!editable}
       />
     </div>
