@@ -155,7 +155,7 @@ export function OrderFormTable({
       } else if (mode === "factory-respond") {
         include = v.hoQty > 0;
       } else if (mode === "customer-view-response") {
-        include = v.factoryAvailable !== null || !!(v.factoryNote?.trim());
+        include = v.customerQty > 0;
       } else if (mode === "customer-view-ordered") {
         include = v.customerQty > 0;
       } else if (mode === "factory-view") {
@@ -518,6 +518,9 @@ function CellEditor({ state, isAvailable, mode, readOnly, onChange }: CellEditor
         )}
         {mode === "factory-view" && (
           <div className="text-[10px] text-slate-400">qty: {state.hoQty}</div>
+        )}
+        {mode === "customer-view-response" && (
+          <div className="text-[10px] text-emerald-700 font-medium">factory</div>
         )}
         <div className="font-medium text-slate-800">{state.factoryNote?.trim() || "—"}</div>
       </div>

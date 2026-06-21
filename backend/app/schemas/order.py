@@ -43,7 +43,17 @@ class OrderItemRead(BaseModel):
     factory_item_note: str | None
 
     @classmethod
-    def from_model(cls, item, viewer_role: UserRole | None = None) -> "OrderItemRead":
+    def from_model(
+        cls,
+        item,
+        viewer_role: UserRole | None = None,
+        order_status: OrderStatus | None = None,
+    ) -> "OrderItemRead":
+        customer_sees_factory = order_status in (
+            OrderStatus.FACTORY_RESPONDED,
+            OrderStatus.COMPLETED,
+        )
+        hide_factory_note = viewer_role == UserRole.CUSTOMER and not customer_sees_factory
         return cls(
             id=item.id,
             product_id=item.product_id,
@@ -52,8 +62,7 @@ class OrderItemRead(BaseModel):
             customer_qty=item.customer_qty,
             ho_qty=item.ho_qty,
             factory_available=item.factory_available,
-            # Customers must not see factory per-item notes
-            factory_item_note=None if viewer_role == UserRole.CUSTOMER else item.factory_item_note,
+            factory_item_note=None if hide_factory_note else item.factory_item_note,
         )
 
 
@@ -131,6 +140,10 @@ class OrderDetail(BaseModel):
 
     @classmethod
     def from_model(cls, order, viewer_role: UserRole | None = None) -> "OrderDetail":
+        customer_sees_factory = order.status in (
+            OrderStatus.FACTORY_RESPONDED,
+            OrderStatus.COMPLETED,
+        )
         return cls(
             id=order.id,
             customer_id=order.customer_id,
@@ -141,7 +154,11 @@ class OrderDetail(BaseModel):
             customer_note=None if viewer_role == UserRole.FACTORY else order.customer_note,
             ho_note=None if viewer_role == UserRole.CUSTOMER else order.ho_note,
             admin_note=None if viewer_role == UserRole.CUSTOMER else order.admin_note,
-            factory_note=None if viewer_role == UserRole.CUSTOMER else order.factory_note,
+            factory_note=(
+                order.factory_note
+                if viewer_role != UserRole.CUSTOMER or customer_sees_factory
+                else None
+            ),
             created_at=order.created_at,
             submitted_at=order.submitted_at,
             ho_forwarded_at=order.ho_forwarded_at,
@@ -150,7 +167,9 @@ class OrderDetail(BaseModel):
             ho_reviewer_id=order.ho_reviewer_id,
             ho_reviewer_name=order.ho_reviewer.name if order.ho_reviewer else None,
             order_form_type=order.order_form_type,
-            items=[OrderItemRead.from_model(i, viewer_role) for i in (order.items or [])],
+            items=[
+                OrderItemRead.from_model(i, viewer_role, order.status) for i in (order.items or [])
+            ],
             product_remarks=(
                 []
                 if viewer_role == UserRole.FACTORY

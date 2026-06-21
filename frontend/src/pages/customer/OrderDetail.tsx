@@ -21,8 +21,8 @@ export default function CustomerOrderDetail() {
   const orderId = Number(id);
   const qc = useQueryClient();
   const { showToast } = useToast();
-  const { data: order, isLoading } = useQuery({
-    queryKey: ["order", orderId],
+  const { data: order, isLoading, isFetched } = useQuery({
+    queryKey: ["order", orderId, "CUSTOMER"],
     queryFn: () => ordersApi.get(orderId),
     enabled: !!orderId,
   });
@@ -31,6 +31,12 @@ export default function CustomerOrderDetail() {
   const [cells, setCells] = useState<CellMap>({});
   const [remarks, setRemarks] = useState<RemarksMap>({});
   const [note, setNote] = useState("");
+
+  useEffect(() => {
+    setCells({});
+    setRemarks({});
+    setNote("");
+  }, [orderId]);
 
   useEffect(() => {
     if (order && catalog) {
@@ -71,7 +77,7 @@ export default function CustomerOrderDetail() {
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to submit", "error"),
   });
 
-  if (isLoading || !order || !catalog) return <div className="text-slate-500">Loading…</div>;
+  if (isLoading || !isFetched || !order || !catalog) return <div className="text-slate-500">Loading…</div>;
 
   const isDraft = order.status === "DRAFT";
   const hasFactoryResponse = order.status === "FACTORY_RESPONDED" || order.status === "COMPLETED";
@@ -123,13 +129,14 @@ export default function CustomerOrderDetail() {
         ) : (
           <p className="text-xs md:text-sm text-slate-700 whitespace-pre-wrap">{order.customer_note || "—"}</p>
         )}
-        {order.ho_note && (
-          <div className="pt-2 border-t border-slate-100">
-            <div className="text-xs uppercase text-sky-700 font-medium">Head Office note</div>
-            <p className="text-xs md:text-sm whitespace-pre-wrap">{order.ho_note}</p>
-          </div>
-        )}
       </div>
+
+      {hasFactoryResponse && order.factory_note && (
+        <div className="card p-3 md:p-4 border-l-4 border-emerald-500">
+          <div className="text-xs uppercase text-emerald-700 font-medium mb-1">Factory note</div>
+          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.factory_note}</p>
+        </div>
+      )}
 
       <OrderFormTable
         catalog={catalog}
