@@ -28,9 +28,11 @@ class Settings(BaseSettings):
     MAIL_SSL_TLS: bool = False
 
     SMS_ENABLED: bool = False
+    WHATSAPP_ENABLED: bool = False
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_FROM_NUMBER: str = ""
+    TWILIO_WHATSAPP_FROM: str = ""
 
     CATALOG_EXCEL_PATH: str = "../AG - ORDER FORM excel.xlsx"
     SULFAG_CATALOG_EXCEL_PATH: str = "../2026.05 PRODUCTS LIST (SP).xlsx"

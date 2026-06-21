@@ -125,6 +125,7 @@ export default function AdminOrderEdit() {
             <FormTypeBadge type={order.order_form_type} />
             {order.branch_name && <span>Location: {order.branch_name}</span>}
             {order.ho_reviewer_name && <span>Head Office: {order.ho_reviewer_name}</span>}
+            {order.admin_reviewer_name && <span>Admin: {order.admin_reviewer_name}</span>}
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">

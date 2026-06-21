@@ -57,7 +57,8 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
       String(o.id).includes(q) ||
       o.customer_name.toLowerCase().includes(q) ||
       (o.branch_name ?? "").toLowerCase().includes(q) ||
-      (o.ho_reviewer_name ?? "").toLowerCase().includes(q)
+      (o.ho_reviewer_name ?? "").toLowerCase().includes(q) ||
+      (o.admin_reviewer_name ?? "").toLowerCase().includes(q)
     );
   });
 
@@ -78,7 +79,7 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
         </select>
         <input
           className="input max-w-xs"
-          placeholder="Search by id / customer / location / HO"
+          placeholder="Search by id / customer / location / HO / admin"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -97,6 +98,7 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
                 <th className="text-left px-3 py-2">Customer</th>
                 <th className="text-left px-3 py-2">Location</th>
                 <th className="text-left px-3 py-2">Head Office</th>
+                <th className="text-left px-3 py-2">Admin</th>
                 <th className="text-left px-3 py-2">Order form</th>
                 <th className="text-left px-3 py-2">Status</th>
                 <th className="text-left px-3 py-2">Items</th>
@@ -114,6 +116,7 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
                   <td className="px-3 py-2">{o.customer_name}</td>
                   <td className="px-3 py-2">{o.branch_name ?? "—"}</td>
                   <td className="px-3 py-2">{o.ho_reviewer_name ?? "—"}</td>
+                  <td className="px-3 py-2">{o.admin_reviewer_name ?? "—"}</td>
                   <td className="px-3 py-2">
                     <FormTypeBadge type={o.order_form_type} />
                   </td>

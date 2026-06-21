@@ -98,6 +98,7 @@ def get_order(
             selectinload(Order.customer),
             selectinload(Order.branch),
             selectinload(Order.ho_reviewer),
+            selectinload(Order.admin_reviewer),
         )
         .where(Order.id == order_id)
     ).scalar_one_or_none()

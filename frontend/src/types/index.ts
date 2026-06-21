@@ -101,6 +101,8 @@ export interface OrderSummary {
   factory_responded_at: string | null;
   ho_reviewer_id: number | null;
   ho_reviewer_name: string | null;
+  admin_reviewer_id: number | null;
+  admin_reviewer_name: string | null;
   item_count: number;
   order_form_type: OrderFormType;
 }
@@ -123,6 +125,8 @@ export interface OrderDetail {
   factory_responded_at: string | null;
   ho_reviewer_id: number | null;
   ho_reviewer_name: string | null;
+  admin_reviewer_id: number | null;
+  admin_reviewer_name: string | null;
   order_form_type: OrderFormType;
   items: OrderItem[];
   product_remarks: ProductRemark[];

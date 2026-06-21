@@ -56,6 +56,9 @@ class Order(Base):
     ho_reviewer_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    admin_reviewer_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ho_forwarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -69,6 +72,7 @@ class Order(Base):
 
     customer: Mapped["User"] = relationship(back_populates="orders", foreign_keys=[customer_id])  # noqa: F821
     ho_reviewer: Mapped["User | None"] = relationship(foreign_keys=[ho_reviewer_id])  # noqa: F821
+    admin_reviewer: Mapped["User | None"] = relationship(foreign_keys=[admin_reviewer_id])  # noqa: F821
     branch: Mapped["Branch | None"] = relationship(back_populates="orders")  # noqa: F821
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
     product_remarks: Mapped[list["OrderProductRemark"]] = relationship(

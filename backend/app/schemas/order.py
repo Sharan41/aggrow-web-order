@@ -91,6 +91,8 @@ class OrderSummary(BaseModel):
     factory_responded_at: datetime | None
     ho_reviewer_id: int | None = None
     ho_reviewer_name: str | None = None
+    admin_reviewer_id: int | None = None
+    admin_reviewer_name: str | None = None
     item_count: int
     order_form_type: OrderFormType
 
@@ -110,6 +112,8 @@ class OrderSummary(BaseModel):
             factory_responded_at=order.factory_responded_at,
             ho_reviewer_id=order.ho_reviewer_id,
             ho_reviewer_name=order.ho_reviewer.name if order.ho_reviewer else None,
+            admin_reviewer_id=order.admin_reviewer_id,
+            admin_reviewer_name=order.admin_reviewer.name if order.admin_reviewer else None,
             item_count=len(order.items or []),
             order_form_type=order.order_form_type,
         )
@@ -133,6 +137,8 @@ class OrderDetail(BaseModel):
     factory_responded_at: datetime | None
     ho_reviewer_id: int | None = None
     ho_reviewer_name: str | None = None
+    admin_reviewer_id: int | None = None
+    admin_reviewer_name: str | None = None
     order_form_type: OrderFormType
     items: list[OrderItemRead]
     product_remarks: list[ProductRemarkRead] = Field(default_factory=list)
@@ -166,6 +172,8 @@ class OrderDetail(BaseModel):
             factory_responded_at=order.factory_responded_at,
             ho_reviewer_id=order.ho_reviewer_id,
             ho_reviewer_name=order.ho_reviewer.name if order.ho_reviewer else None,
+            admin_reviewer_id=order.admin_reviewer_id,
+            admin_reviewer_name=order.admin_reviewer.name if order.admin_reviewer else None,
             order_form_type=order.order_form_type,
             items=[
                 OrderItemRead.from_model(i, viewer_role, order.status) for i in (order.items or [])

@@ -79,6 +79,7 @@ def _load_order(db: Session, order_id: int) -> Order:
             selectinload(Order.customer),
             selectinload(Order.branch),
             selectinload(Order.ho_reviewer),
+            selectinload(Order.admin_reviewer),
         )
         .where(Order.id == order_id)
     ).scalar_one_or_none()
@@ -352,8 +353,9 @@ def admin_forward(db: Session, order_id: int, actor: User) -> Order:
         )
     order.status = OrderStatus.HO_FORWARDED
     order.admin_forwarded_at = _now()
+    order.admin_reviewer_id = actor.id
     _record_event(db, order, actor, OrderEventAction.ADMIN_FORWARDED)
-    notif.fan_out_forwarded(db, order)
+    notif.fan_out_forwarded(db, order, actor)
     db.commit()
     return _load_order(db, order.id)
 
@@ -428,6 +430,7 @@ def scope_orders_query(user: User):
         selectinload(Order.customer),
         selectinload(Order.branch),
         selectinload(Order.ho_reviewer),
+        selectinload(Order.admin_reviewer),
     )
     if user.role == UserRole.CUSTOMER:
         q = q.where(Order.customer_id == user.id)

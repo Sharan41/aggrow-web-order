@@ -34,6 +34,7 @@ function List({ title, statuses }: { title: string; statuses: OrderStatus[] }) {
                 <th className="text-left px-3 py-2">Location</th>
                 <th className="text-left px-3 py-2">Status</th>
                 <th className="text-left px-3 py-2">Items</th>
+                <th className="text-left px-3 py-2">Admin</th>
                 <th className="text-left px-3 py-2">Forwarded</th>
                 <th />
               </tr>
@@ -48,6 +49,7 @@ function List({ title, statuses }: { title: string; statuses: OrderStatus[] }) {
                     <StatusBadge status={o.status} />
                   </td>
                   <td className="px-3 py-2">{o.item_count}</td>
+                  <td className="px-3 py-2">{o.admin_reviewer_name ?? "—"}</td>
                   <td className="px-3 py-2">
                     {o.ho_forwarded_at ? new Date(o.ho_forwarded_at).toLocaleString() : "—"}
                   </td>

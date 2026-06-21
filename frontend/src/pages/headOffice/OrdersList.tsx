@@ -81,6 +81,7 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
                 <th className="text-left px-3 py-2">Items</th>
                 <th className="text-left px-3 py-2">Submitted</th>
                 <th className="text-left px-3 py-2">Forwarded</th>
+                <th className="text-left px-3 py-2">Admin</th>
                 <th className="text-left px-3 py-2">Responded</th>
                 <th />
               </tr>
@@ -102,6 +103,7 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
                   <td className="px-3 py-2">
                     {o.ho_forwarded_at ? new Date(o.ho_forwarded_at).toLocaleString() : "—"}
                   </td>
+                  <td className="px-3 py-2">{o.admin_reviewer_name ?? "—"}</td>
                   <td className="px-3 py-2">
                     {o.factory_responded_at ? new Date(o.factory_responded_at).toLocaleString() : "—"}
                   </td>

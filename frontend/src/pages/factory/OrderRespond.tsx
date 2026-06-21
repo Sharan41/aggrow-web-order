@@ -79,6 +79,7 @@ export default function FactoryOrderRespond() {
             <StatusBadge status={order.status} />
             <span>Customer: {order.customer_name}</span>
             {order.branch_name && <span>· Location: {order.branch_name}</span>}
+            {order.admin_reviewer_name && <span>· Admin: {order.admin_reviewer_name}</span>}
           </div>
         </div>
         {editable && (

@@ -1,17 +1,20 @@
-"""Create in-app notifications and enqueue emails and SMS for order events."""
+"""Create in-app notifications and enqueue emails and mobile alerts for order events."""
 from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from typing import Iterable
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.models import Notification, Order, User, UserRole
 from app.models.notification import NotificationType
 from app.services.email import send_email
 from app.services.sms import send_sms
+from app.services.whatsapp import send_whatsapp
 
 logger = logging.getLogger(__name__)
 
@@ -51,20 +54,28 @@ def _send_emails_bg(recipients: list[User], subject: str, body_html: str) -> Non
         logger.exception("Email dispatch failed")
 
 
-def _send_sms_bg(recipients: list[User], body: str) -> None:
-    numbers = [u.mobile_number for u in recipients if u.mobile_number]
-    if not numbers:
-        return
+def _dispatch_mobile_bg(send_fn: Callable[[list[str], str], None], numbers: list[str], body: str, label: str) -> None:
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            loop.create_task(asyncio.to_thread(send_sms, numbers, body))
+            loop.create_task(asyncio.to_thread(send_fn, numbers, body))
         else:  # pragma: no cover
-            loop.run_until_complete(asyncio.to_thread(send_sms, numbers, body))
+            loop.run_until_complete(asyncio.to_thread(send_fn, numbers, body))
     except RuntimeError:
-        send_sms(numbers, body)
+        send_fn(numbers, body)
     except Exception:  # pragma: no cover
-        logger.exception("SMS dispatch failed")
+        logger.exception("%s dispatch failed", label)
+
+
+def _send_mobile_bg(recipients: list[User], body: str) -> None:
+    numbers = [u.mobile_number for u in recipients if u.mobile_number]
+    if not numbers:
+        return
+    settings = get_settings()
+    if settings.WHATSAPP_ENABLED:
+        _dispatch_mobile_bg(send_whatsapp, numbers, body, "WhatsApp")
+    elif settings.SMS_ENABLED:
+        _dispatch_mobile_bg(send_sms, numbers, body, "SMS")
 
 
 def fan_out_submitted(db: Session, order: Order) -> None:
@@ -82,7 +93,7 @@ def fan_out_submitted(db: Session, order: Order) -> None:
             f"<p>Please review and forward to admin.</p>"
         ),
     )
-    _send_sms_bg(recipients, f"[AG Grow] New order #{order.id} submitted by {order.customer.name}. Please review.")
+    _send_mobile_bg(recipients, f"[AG Grow] New order #{order.id} submitted by {order.customer.name}. Please review.")
 
 
 def fan_out_ho_forwarded_to_admin(db: Session, order: Order, ho_actor: User) -> None:
@@ -102,27 +113,31 @@ def fan_out_ho_forwarded_to_admin(db: Session, order: Order, ho_actor: User) -> 
             f"<p>Please review and forward to the factory.</p>"
         ),
     )
-    _send_sms_bg(
+    _send_mobile_bg(
         recipients,
         f"[AG Grow] Order #{order.id} forwarded by {ho_actor.name} (HO). Please review.",
     )
 
 
-def fan_out_forwarded(db: Session, order: Order) -> None:
+def fan_out_forwarded(db: Session, order: Order, admin_actor: User) -> None:
     """Admin -> Factory."""
     factory_users = _users_by_role(db, UserRole.FACTORY)
-    message = f"Order #{order.id} forwarded by Admin to factory."
+    message = f"Order #{order.id} forwarded by Admin ({admin_actor.name}) to factory."
     recipients = _notify(db, factory_users, order, NotificationType.ORDER_FORWARDED, message)
     _send_emails_bg(
         recipients,
         subject=f"[AG Grow] Order #{order.id} forwarded for dispatch",
         body_html=(
             f"<p>Hi Factory team,</p>"
-            f"<p>Admin has forwarded order <b>#{order.id}</b>.</p>"
+            f"<p>Admin user <b>{admin_actor.name}</b> has forwarded order "
+            f"<b>#{order.id}</b>.</p>"
             f"<p>Please respond with item availability.</p>"
         ),
     )
-    _send_sms_bg(recipients, f"[AG Grow] Order #{order.id} forwarded by Admin. Please respond with availability.")
+    _send_mobile_bg(
+        recipients,
+        f"[AG Grow] Order #{order.id} forwarded by {admin_actor.name} (Admin). Please respond with availability.",
+    )
 
 
 def fan_out_factory_responded(db: Session, order: Order) -> None:
@@ -143,7 +158,7 @@ def fan_out_factory_responded(db: Session, order: Order) -> None:
             f"<p>Please log in to review item availability and the factory note.</p>"
         ),
     )
-    _send_sms_bg(all_ops, f"[AG Grow] Factory responded to order #{order.id}. Log in to review.")
+    _send_mobile_bg(all_ops, f"[AG Grow] Factory responded to order #{order.id}. Log in to review.")
 
     customer_message = f"Your order #{order.id} has been processed and completed."
     customer_recipients = _notify(db, [order.customer], order, NotificationType.ORDER_RESPONDED, customer_message)
@@ -155,7 +170,7 @@ def fan_out_factory_responded(db: Session, order: Order) -> None:
             f"<p>Your order <b>#{order.id}</b> has been completed. Please log in to view the status.</p>"
         ),
     )
-    _send_sms_bg(customer_recipients, f"[AG Grow] Your order #{order.id} has been completed. Log in to view details.")
+    _send_mobile_bg(customer_recipients, f"[AG Grow] Your order #{order.id} has been completed. Log in to view details.")
 
 
 def fan_out_ho_rejected(db: Session, order: Order) -> None:
@@ -179,7 +194,7 @@ def fan_out_ho_rejected(db: Session, order: Order) -> None:
             f"<p>Please log in to view the note.</p>"
         ),
     )
-    _send_sms_bg(customer_recipients, f"[AG Grow] Your order #{order.id} was rejected by Head Office. Log in for details.")
+    _send_mobile_bg(customer_recipients, f"[AG Grow] Your order #{order.id} was rejected by Head Office. Log in for details.")
     _send_emails_bg(
         admin_recipients,
         subject=f"[AG Grow] Order #{order.id} rejected by Head Office",
@@ -189,7 +204,7 @@ def fan_out_ho_rejected(db: Session, order: Order) -> None:
             f"<p>Please log in to view details.</p>"
         ),
     )
-    _send_sms_bg(admin_recipients, f"[AG Grow] Order #{order.id} rejected by Head Office.")
+    _send_mobile_bg(admin_recipients, f"[AG Grow] Order #{order.id} rejected by Head Office.")
 
 
 def fan_out_admin_rejected(db: Session, order: Order) -> None:
@@ -213,7 +228,7 @@ def fan_out_admin_rejected(db: Session, order: Order) -> None:
             f"<p>Please log in to view the note.</p>"
         ),
     )
-    _send_sms_bg(customer_recipients, f"[AG Grow] Your order #{order.id} was rejected by Admin. Log in for details.")
+    _send_mobile_bg(customer_recipients, f"[AG Grow] Your order #{order.id} was rejected by Admin. Log in for details.")
     _send_emails_bg(
         ho_recipients,
         subject=f"[AG Grow] Order #{order.id} rejected by Admin",
@@ -223,4 +238,4 @@ def fan_out_admin_rejected(db: Session, order: Order) -> None:
             f"<p>Please log in to view details.</p>"
         ),
     )
-    _send_sms_bg(ho_recipients, f"[AG Grow] Order #{order.id} rejected by Admin.")
+    _send_mobile_bg(ho_recipients, f"[AG Grow] Order #{order.id} rejected by Admin.")
