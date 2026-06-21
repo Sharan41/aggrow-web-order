@@ -44,7 +44,7 @@ class PackingGroup(Base):
     products: Mapped[list["Product"]] = relationship(
         back_populates="packing_group",
         cascade="all, delete-orphan",
-        order_by="Product.display_order",
+        order_by="Product.s_no",
     )
 
 

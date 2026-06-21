@@ -57,7 +57,6 @@ export default function HoCatalog() {
   const createProduct = useMutation({
     mutationFn: (body: {
       packing_group_id: number;
-      s_no: number;
       name: string;
       packing_type?: string | null;
       available_sizes: string[];
@@ -233,7 +232,6 @@ interface GroupEditorProps {
   onDelete: () => void;
   onAddProduct: (body: {
     packing_group_id: number;
-    s_no: number;
     name: string;
     packing_type?: string | null;
     available_sizes: string[];
@@ -254,9 +252,12 @@ function GroupEditor({
 }: GroupEditorProps) {
   const [pName, setPName] = useState("");
   const [pType, setPType] = useState("");
-  const [pSno, setPSno] = useState("");
   const [pSizes, setPSizes] = useState<Set<string>>(new Set());
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  const sortedProducts = [...group.products].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+  );
 
   const toggleSize = (size: string, current: Product) => {
     const set = new Set(current.packings.filter((x) => x.available).map((x) => x.size_label));
@@ -292,7 +293,7 @@ function GroupEditor({
             </tr>
           </thead>
           <tbody>
-            {group.products.map((p) => {
+            {sortedProducts.map((p) => {
               const avail = new Set(p.packings.filter((x) => x.available).map((x) => x.size_label));
               return (
                 <tr key={p.id} className="even:bg-slate-50">
@@ -334,27 +335,18 @@ function GroupEditor({
         className="flex flex-col md:flex-row flex-wrap gap-2 items-start md:items-center"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!pName.trim() || !pSno) return;
+          if (!pName.trim()) return;
           onAddProduct({
             packing_group_id: group.id,
-            s_no: Number(pSno),
             name: pName.trim(),
             packing_type: pType.trim() || null,
             available_sizes: Array.from(pSizes),
           });
           setPName("");
           setPType("");
-          setPSno("");
           setPSizes(new Set());
         }}
       >
-        <input
-          className="input text-sm w-20"
-          type="number"
-          placeholder="S.No"
-          value={pSno}
-          onChange={(e) => setPSno(e.target.value)}
-        />
         <input
           className="input text-sm max-w-xs flex-1"
           placeholder="Product name"

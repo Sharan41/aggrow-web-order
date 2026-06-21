@@ -22,7 +22,6 @@ export const catalogApi = {
   deletePackingGroup: (id: number) => apiClient.delete(`/catalog/packing-groups/${id}`),
   createProduct: (body: {
     packing_group_id: number;
-    s_no: number;
     name: string;
     packing_type?: string | null;
     available_sizes: string[];

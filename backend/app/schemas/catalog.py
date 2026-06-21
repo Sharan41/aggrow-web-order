@@ -77,7 +77,7 @@ class PackingGroupUpdate(BaseModel):
 
 class ProductCreate(BaseModel):
     packing_group_id: int
-    s_no: int
+    s_no: int | None = None
     name: str
     packing_type: str | None = None
     display_order: int = 0

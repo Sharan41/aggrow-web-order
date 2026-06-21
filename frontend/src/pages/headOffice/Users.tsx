@@ -313,7 +313,7 @@ function UserForm({
         onChange={(e) => setPassword(e.target.value)}
       />
       <select className="input text-sm" value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
-        <option value="CUSTOMER">User (Location)</option>
+        <option value="CUSTOMER">Customer</option>
         <option value="HEAD_OFFICE">Head Office</option>
         <option value="FACTORY">Factory</option>
       </select>
@@ -443,7 +443,7 @@ function EditUserModal({
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
             <select className="input text-sm w-full" value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
-              <option value="CUSTOMER">User (Location)</option>
+              <option value="CUSTOMER">Customer</option>
               <option value="HEAD_OFFICE">Head Office</option>
               <option value="FACTORY">Factory</option>
             </select>

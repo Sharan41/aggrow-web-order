@@ -148,6 +148,16 @@ def _sync_packings(db: Session, product: Product, sizes: list[str] | None) -> No
             db.add(ProductPacking(product_id=product.id, size_label=label, available=True))
 
 
+def _renumber_group_products(db: Session, packing_group_id: int) -> None:
+    products = list(
+        db.execute(select(Product).where(Product.packing_group_id == packing_group_id)).scalars().all()
+    )
+    products.sort(key=lambda p: p.name.casefold())
+    for idx, product in enumerate(products, start=1):
+        product.s_no = idx
+        product.display_order = idx - 1
+
+
 @router.post("/products", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
 def create_product(body: ProductCreate, db: Session = Depends(get_db), _: User = Depends(admin_only)) -> ProductRead:
     pg = db.get(PackingGroup, body.packing_group_id)
@@ -158,7 +168,7 @@ def create_product(body: ProductCreate, db: Session = Depends(get_db), _: User =
         raise HTTPException(status_code=400, detail=f"Sizes not in group headers: {invalid}")
     product = Product(
         packing_group_id=body.packing_group_id,
-        s_no=body.s_no,
+        s_no=body.s_no or 0,
         name=body.name,
         packing_type=body.packing_type,
         display_order=body.display_order,
@@ -168,6 +178,7 @@ def create_product(body: ProductCreate, db: Session = Depends(get_db), _: User =
     db.flush()
     for size in body.available_sizes:
         db.add(ProductPacking(product_id=product.id, size_label=size, available=True))
+    _renumber_group_products(db, body.packing_group_id)
     db.commit()
     db.refresh(product)
     return ProductRead.model_validate(product)
@@ -193,6 +204,8 @@ def update_product(
     for k, v in data.items():
         setattr(product, k, v)
     _sync_packings(db, product, sizes)
+    if "name" in data:
+        _renumber_group_products(db, product.packing_group_id)
     db.commit()
     db.refresh(product)
     return ProductRead.model_validate(product)
@@ -203,5 +216,7 @@ def delete_product(product_id: int, db: Session = Depends(get_db), _: User = Dep
     product = db.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    group_id = product.packing_group_id
     db.delete(product)
+    _renumber_group_products(db, group_id)
     db.commit()
