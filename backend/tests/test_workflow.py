@@ -82,6 +82,7 @@ def test_full_four_way_workflow(client, seed, tokens):
     r = client.post(f"/orders/{order_id}/admin-forward", headers=_h(tokens["admin"]))
     assert r.status_code == 200, r.text
     assert r.json()["status"] == "HO_FORWARDED"
+    assert r.json()["admin_reviewer_name"] == "Admin"
 
     # Factory sees it, must respond to all ho_qty > 0 items
     r = client.get("/orders", params={"status": "HO_FORWARDED"}, headers=_h(tokens["factory"]))
