@@ -48,7 +48,6 @@ export const ordersApi = {
     apiClient.post<OrderDetail>(`/orders/${id}/admin-forward`).then((r) => r.data),
   reject: (id: number, reason?: string | null) =>
     apiClient.post<OrderDetail>(`/orders/${id}/reject`, { reason }).then((r) => r.data),
-  revoke: (id: number) => apiClient.post<OrderDetail>(`/orders/${id}/revoke`).then((r) => r.data),
   factoryRespond: (
     id: number,
     body: { items: FactoryItemInput[]; factory_note?: string | null },

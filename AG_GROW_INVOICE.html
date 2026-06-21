@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+    <meta charset="utf-8">
+    <title>AGRO PRODUCTS - Web Order System Invoice</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+
+        @media print {
+            @page { size: A4 portrait; margin: 1.8cm 1.5cm; }
+            body { margin: 0; padding: 10px 20px; font-size: 10pt; line-height: 1.4; }
+            h1 { font-size: 20pt; margin-bottom: 15px; page-break-after: avoid; }
+            h2 { font-size: 16pt; margin-top: 20px; margin-bottom: 12px; page-break-after: avoid; }
+            h3 { font-size: 12pt; page-break-after: avoid; }
+            table { page-break-inside: avoid; margin: 10px 0; font-size: 9.5pt; }
+            table thead { display: table-header-group; }
+            tr { page-break-inside: avoid; }
+            .total-box { page-break-inside: avoid; page-break-before: avoid; padding: 18px; font-size: 24pt; margin: 15px 0; }
+            .highlight-box { page-break-inside: avoid; padding: 12px; margin: 12px 0; }
+            .header-info { page-break-after: avoid; margin-bottom: 15px; }
+            .section-divider { margin: 15px 0; }
+            h3 + table { page-break-before: avoid; }
+            .subtotal { margin: 8px 0 15px 0; }
+            div[style*="justify-content: space-between"] { page-break-inside: avoid; page-break-before: avoid; }
+            ul, ol { page-break-inside: avoid; margin: 10px 0; padding-left: 25px; }
+            li { margin: 5px 0; page-break-inside: avoid; }
+            a { text-decoration: none; color: #333; }
+            a[href]:after { content: none; }
+            p { margin: 8px 0; }
+            * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+        }
+
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 { color: #1a5c2e; font-size: 24pt; margin-bottom: 20px; border-bottom: 3px solid #1a5c2e; padding-bottom: 10px; }
+        h2 { color: #1a5c2e; font-size: 18pt; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+        h3 { color: #2d8a4e; font-size: 14pt; margin-top: 20px; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11pt; }
+        th { background-color: #1a5c2e; color: white; padding: 12px; text-align: left; font-weight: bold; }
+        td { padding: 10px 12px; border: 1px solid #ddd; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .subtotal { font-weight: bold; font-size: 12pt; color: #1a5c2e; margin: 10px 0; text-align: right; }
+        .header-info { margin-bottom: 20px; font-size: 11pt; }
+        .header-info strong { color: #1a5c2e; display: inline-block; width: 140px; }
+        .total-box { background: linear-gradient(135deg, #1a5c2e 0%, #2d8a4e 100%); color: white; padding: 25px; text-align: center; font-size: 28pt; font-weight: bold; margin: 25px 0; border-radius: 10px; }
+        .highlight-box { background-color: #eef7f0; border-left: 4px solid #1a5c2e; padding: 15px; margin: 15px 0; }
+        ul { list-style: none; padding-left: 0; }
+        ul li { padding: 5px 0; padding-left: 25px; position: relative; }
+        ul li:before { content: "\2713"; color: #28a745; font-weight: bold; position: absolute; left: 0; }
+        .section-divider { border-top: 2px solid #e0e0e0; margin: 25px 0; }
+        .terms-list { counter-reset: terms-counter; list-style: none; }
+        .terms-list li { counter-increment: terms-counter; padding-left: 35px; }
+        .terms-list li:before { content: counter(terms-counter) "."; color: #1a5c2e; font-weight: bold; left: 0; }
+    </style>
+</head>
+<body>
+
+<h1>AGRO PRODUCTS — WEB ORDER SYSTEM INVOICE</h1>
+
+<div class="header-info">
+    <p><strong>Invoice Number:</strong> INV-2026-005</p>
+    <p><strong>Invoice Date:</strong> June 21, 2026</p>
+    <p><strong>Invoice To:</strong> SULFAG PRODUCTS LIMITED</p>
+    <p style="padding-left: 140px; margin-top: -8px;">Chennai, Tamil Nadu 600010, India</p>
+    <p><strong>Project:</strong> Online Order Management System</p>
+    <p><strong>Service Provider:</strong> Sai Sharan V (Individual Freelancer)</p>
+    <p><strong>Contact:</strong> +91 6383991383 | saisharanvishnu@gmail.com</p>
+    <p><strong>Live App:</strong> <a href="https://www.yourcropcare.in" target="_blank">www.yourcropcare.in</a></p>
+</div>
+
+<div class="highlight-box" style="margin-top: 20px;">
+    <p style="font-size: 10pt; margin: 0;"><strong>Service Provider Tax Status:</strong> Individual Freelancer | <strong>GST:</strong> Not Applicable (Below threshold limit) | <strong>PAN:</strong> Available on request</p>
+</div>
+
+<div class="section-divider"></div>
+
+<h2>PROJECT SUMMARY</h2>
+<p>A complete online order management system built for <strong>AGRO PRODUCTS</strong>. The system allows <strong>Customers</strong> to place orders (AG GROW or Sulfag product sheets), <strong>Head Office</strong> to review and forward to <strong>Admin</strong>, <strong>Admin</strong> to approve and send to the <strong>Factory</strong>, and the Factory to enter availability values — all through a single web app branded as the <strong>AGRO PRODUCTS Order Portal</strong>. Includes in-app notifications at every step.</p>
+
+<div class="section-divider"></div>
+
+<h2>TECHNOLOGY USED</h2>
+
+<div class="highlight-box">
+    <p style="margin: 4px 0;"><strong>Website:</strong> Built with React — a modern, fast framework used by Facebook, Instagram, etc.</p>
+    <p style="margin: 4px 0;"><strong>Server:</strong> Built with Python — handles all the logic, login, and order processing</p>
+    <p style="margin: 4px 0;"><strong>Database:</strong> Neon PostgreSQL — a cloud database that stores all orders, users, and products securely</p>
+    <p style="margin: 4px 0;"><strong>Hosting:</strong> Render.com — cloud server that keeps the app running 24/7</p>
+</div>
+
+<div class="section-divider"></div>
+
+<h2>PRICING BREAKDOWN</h2>
+
+<h3>1. Order Management System</h3>
+<table>
+    <thead>
+        <tr>
+            <th>What You Get</th>
+            <th style="width: 120px;">Price (INR)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Complete order workflow — Customer places order → Head Office reviews → Admin approves → Factory confirms availability → Order completed</td>
+            <td style="text-align: right;">&#8377;2,000</td>
+        </tr>
+        <tr>
+            <td>Order tracking with full history — see who did what and when for every order</td>
+            <td style="text-align: right;">&#8377;800</td>
+        </tr>
+        <tr>
+            <td>Head Office can edit quantities, add Head Office notes, and forward orders to Admin</td>
+            <td style="text-align: right;">&#8377;800</td>
+        </tr>
+        <tr>
+            <td>Factory enters a value per line item (quantity/availability text) instead of tick/cross — clearer responses for Head Office and Customer</td>
+            <td style="text-align: right;">&#8377;700</td>
+        </tr>
+        <tr>
+            <td>Product catalog with sizes and packing — all products imported from Excel with size options, can be edited and changes reflect directly in the database</td>
+            <td style="text-align: right;">&#8377;600</td>
+        </tr>
+        <tr>
+            <td>Delete completed orders (Admin only — Head Office cannot delete orders)</td>
+            <td style="text-align: right;">&#8377;300</td>
+        </tr>
+    </tbody>
+</table>
+<p class="subtotal">Subtotal: &#8377;5,200</p>
+
+<h3>2. Dynamic Edit View</h3>
+<table>
+    <thead>
+        <tr>
+            <th>What You Get</th>
+            <th style="width: 120px;">Price (INR)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Backend logic — only sends edited/changed rows from Customer to Head Office (filters out empty data)</td>
+            <td style="text-align: right;">&#8377;500</td>
+        </tr>
+        <tr>
+            <td>UI display — Head Office and Factory views show only rows with actual quantities (no blank rows)</td>
+            <td style="text-align: right;">&#8377;500</td>
+        </tr>
+    </tbody>
+</table>
+<p class="subtotal">Subtotal: &#8377;1,000</p>
+
+<h3>3. Login & User Management</h3>
+<table>
+    <thead>
+        <tr>
+            <th>What You Get</th>
+            <th style="width: 120px;">Price (INR)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Secure login system — each user has their own account with encrypted password</td>
+            <td style="text-align: right;">&#8377;800</td>
+        </tr>
+        <tr>
+            <td>4 user roles — Customer, Head Office, Admin, and Factory — each sees only what they need</td>
+            <td style="text-align: right;">&#8377;600</td>
+        </tr>
+        <tr>
+            <td>Admin panel to add/manage users and assign locations (optional location per customer)</td>
+            <td style="text-align: right;">&#8377;500</td>
+        </tr>
+    </tbody>
+</table>
+<p class="subtotal">Subtotal: &#8377;1,900</p>
+
+<h3>4. Notifications</h3>
+<table>
+    <thead>
+        <tr>
+            <th>What You Get</th>
+            <th style="width: 120px;">Price (INR)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>In-app notification bell — see new updates without refreshing the page</td>
+            <td style="text-align: right;">&#8377;900</td>
+        </tr>
+        <tr>
+            <td>Notification listing page — view all past notifications with read/unread status</td>
+            <td style="text-align: right;">&#8377;1,000</td>
+        </tr>
+    </tbody>
+</table>
+<p class="subtotal">Subtotal: &#8377;1,900</p>
+
+<h3>5. Website Design & User Interface</h3>
+<table>
+    <thead>
+        <tr>
+            <th>What You Get</th>
+            <th style="width: 120px;">Price (INR)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Head Office & Admin dashboards — overview with status counts (With HO, with admin, in factory, etc.)</td>
+            <td style="text-align: right;">&#8377;600</td>
+        </tr>
+        <tr>
+            <td>Order form with product selection — AG GROW and Sulfag sheets with sizes, quantities, and per-product remarks</td>
+            <td style="text-align: right;">&#8377;700</td>
+        </tr>
+        <tr>
+            <td>Mobile-friendly design — hamburger menu, scrollable tables, works perfectly on phone</td>
+            <td style="text-align: right;">&#8377;600</td>
+        </tr>
+    </tbody>
+</table>
+<p class="subtotal">Subtotal: &#8377;1,900</p>
+
+<h3>6. Deployment & Setup</h3>
+<table>
+    <thead>
+        <tr>
+            <th>What You Get</th>
+            <th style="width: 120px;">Price (INR)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>App deployed on Render.com — accessible 24/7 from any device with internet</td>
+            <td style="text-align: right;">&#8377;600</td>
+        </tr>
+        <tr>
+            <td>Neon database setup — all your data stored securely in the cloud</td>
+            <td style="text-align: right;">&#8377;500</td>
+        </tr>
+    </tbody>
+</table>
+<p class="subtotal">Subtotal: &#8377;1,100</p>
+
+<h3>7. Sulfag Dual Order Form</h3>
+<table>
+    <thead>
+        <tr>
+            <th>What You Get</th>
+            <th style="width: 120px;">Price (INR)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Order form picker — Customer chooses <strong>AG GROW</strong> or <strong>Sulfag (SP)</strong> before starting a new order</td>
+            <td style="text-align: right;">&#8377;500</td>
+        </tr>
+        <tr>
+            <td>Dedicated Sulfag new order form — full product table, sizes, remarks, and draft/submit flow (same UX as AG GROW, separate catalog)</td>
+            <td style="text-align: right;">&#8377;500</td>
+        </tr>
+        <tr>
+            <td>Separate Sulfag product catalog — imported from Excel (2026.05 PRODUCTS LIST SP), stored independently in database</td>
+            <td style="text-align: right;">&#8377;500</td>
+        </tr>
+        <tr>
+            <td>Full four-step workflow for Sulfag — remarks, notes, Head Office → Admin → Factory (remarks hidden from factory where required)</td>
+            <td style="text-align: right;">&#8377;300</td>
+        </tr>
+        <tr>
+            <td>Admin catalog management & order labels — manage Sulfag products separately; AG GROW / Sulfag badge shown on all order lists</td>
+            <td style="text-align: right;">&#8377;200</td>
+        </tr>
+    </tbody>
+</table>
+<p class="subtotal">Subtotal: &#8377;2,000</p>
+
+<h3>8. Admin Role & Four-Step Approval Workflow</h3>
+<table>
+    <thead>
+        <tr>
+            <th>What You Get</th>
+            <th style="width: 120px;">Price (INR)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Admin role & dashboard — single admin account with full order overview, KPIs, and visibility of which Head Office user forwarded each order</td>
+            <td style="text-align: right;">&#8377;800</td>
+        </tr>
+        <tr>
+            <td>Four-step workflow — Customer → Head Office → Admin → Factory, with Head Office and Admin each able to review, edit quantities, and add notes before forwarding</td>
+            <td style="text-align: right;">&#8377;1,000</td>
+        </tr>
+        <tr>
+            <td>Admin-only order rejection — Head Office uses Head Office notes for feedback; Admin can reject with notifications to Head Office and Customer</td>
+            <td style="text-align: right;">&#8377;500</td>
+        </tr>
+        <tr>
+            <td>Admin user & catalog management — Users & Locations, and Catalog under Admin only; Admin can create Head Office, Customer, and Factory users</td>
+            <td style="text-align: right;">&#8377;700</td>
+        </tr>
+    </tbody>
+</table>
+<p class="subtotal">Subtotal: &#8377;3,000</p>
+
+<h3>10. Portal Enhancements & UX Refinements</h3>
+<table>
+    <thead>
+        <tr>
+            <th>What You Get</th>
+            <th style="width: 120px;">Price (INR)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>AGRO PRODUCTS branding</strong> — portal title, login heading, and header logo updated to AGRO PRODUCTS Order Portal</td>
+            <td style="text-align: right;">&#8377;300</td>
+        </tr>
+        <tr>
+            <td><strong>Location terminology</strong> — all “Branch” labels renamed to “Location” across the app; Users & Locations admin screen</td>
+            <td style="text-align: right;">&#8377;300</td>
+        </tr>
+        <tr>
+            <td><strong>Compact order views</strong> — after placing an order, Customer sees only ordered rows; Factory history shows only filled/responded rows</td>
+            <td style="text-align: right;">&#8377;400</td>
+        </tr>
+        <tr>
+            <td><strong>Print order table</strong> — one-click print button on order detail screens (prints current table only)</td>
+            <td style="text-align: right;">&#8377;300</td>
+        </tr>
+        <tr>
+            <td><strong>Cleaner order forms</strong> — S.No column removed from order sheets; catalog products auto-sorted alphabetically with automatic serial numbers on add/edit/delete</td>
+            <td style="text-align: right;">&#8377;400</td>
+        </tr>
+        <tr>
+            <td><strong>Head Office workflow polish</strong> — “With HO” status labelling; delete orders removed from Head Office (Admin-only cleanup)</td>
+            <td style="text-align: right;">&#8377;300</td>
+        </tr>
+    </tbody>
+</table>
+<p class="subtotal">Subtotal: &#8377;2,000</p>
+
+<h3>9. Additional Features Included (Bundled — No Extra Charge)</h3>
+<table>
+    <thead>
+        <tr>
+            <th>What You Get</th>
+            <th style="width: 120px;">Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Customer self-service</strong> — save draft orders, edit before submit, view order history and completed status</td>
+            <td style="text-align: right;">Included</td>
+        </tr>
+        <tr>
+            <td><strong>Per-product remarks</strong> — optional notes per product line on AG GROW and Sulfag order forms</td>
+            <td style="text-align: right;">Included</td>
+        </tr>
+        <tr>
+            <td><strong>Branch / Location management</strong> — create and edit locations; optional location when creating Customer users</td>
+            <td style="text-align: right;">Included</td>
+        </tr>
+        <tr>
+            <td><strong>Factory views</strong> — separate Pending Orders and History screens for factory team</td>
+            <td style="text-align: right;">Included</td>
+        </tr>
+        <tr>
+            <td><strong>Order search & filters</strong> — filter by status; search by order id, customer, location, or Head Office sender (Admin)</td>
+            <td style="text-align: right;">Included</td>
+        </tr>
+        <tr>
+            <td><strong>Role-based privacy</strong> — each role sees only allowed notes (e.g. factory cannot see customer note; customer cannot see internal HO/Admin notes)</td>
+            <td style="text-align: right;">Included</td>
+        </tr>
+        <tr>
+            <td><strong>Secure sessions</strong> — JWT login with token refresh; encrypted passwords</td>
+            <td style="text-align: right;">Included</td>
+        </tr>
+        <tr>
+            <td><strong>User activate/deactivate</strong> — Admin can enable or disable accounts without deleting them</td>
+            <td style="text-align: right;">Included</td>
+        </tr>
+        <tr>
+            <td><strong>Production domain</strong> — live on www.yourcropcare.in with backend CORS configured for production</td>
+            <td style="text-align: right;">Included</td>
+        </tr>
+        <tr>
+            <td><strong>Fresh handoff ready</strong> — production database reset with clean admin account (admin@agroproducts.com) for client to create users and locations</td>
+            <td style="text-align: right;">Included</td>
+        </tr>
+    </tbody>
+</table>
+<p class="subtotal">Bundled within package total — &#8377;0 additional</p>
+
+<div class="section-divider"></div>
+
+<h2>PRICING SUMMARY</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th style="width: 150px; text-align: right;">Amount (INR)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Order Management System (incl. Product Catalog)</td>
+            <td style="text-align: right;">&#8377;5,200</td>
+        </tr>
+        <tr>
+            <td>Dynamic Edit View (Backend + UI)</td>
+            <td style="text-align: right;">&#8377;1,000</td>
+        </tr>
+        <tr>
+            <td>Login & User Management</td>
+            <td style="text-align: right;">&#8377;1,900</td>
+        </tr>
+        <tr>
+            <td>Notifications (In-App)</td>
+            <td style="text-align: right;">&#8377;1,900</td>
+        </tr>
+        <tr>
+            <td>Website Design & User Interface</td>
+            <td style="text-align: right;">&#8377;1,900</td>
+        </tr>
+        <tr>
+            <td>Deployment & Setup</td>
+            <td style="text-align: right;">&#8377;1,100</td>
+        </tr>
+        <tr>
+            <td>Sulfag Dual Order Form</td>
+            <td style="text-align: right;">&#8377;2,000</td>
+        </tr>
+        <tr>
+            <td>Admin Role & Four-Step Approval Workflow</td>
+            <td style="text-align: right;">&#8377;3,000</td>
+        </tr>
+        <tr>
+            <td>Portal Enhancements & UX Refinements</td>
+            <td style="text-align: right;">&#8377;2,000</td>
+        </tr>
+        <tr>
+            <td>Additional Features (Section 9 — bundled)</td>
+            <td style="text-align: right;">Included</td>
+        </tr>
+        <tr style="background-color: #eef7f0;">
+            <td><strong>FINAL TOTAL</strong></td>
+            <td style="text-align: right;"><strong>&#8377;20,000</strong></td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="section-divider"></div>
+
+<h2>FINAL INVOICE TOTAL</h2>
+
+<div class="total-box">
+    &#8377;20,000 ONLY
+</div>
+
+<p style="text-align: center; font-size: 14pt; font-weight: bold; color: #1a5c2e;">
+    (Rupees Twenty Thousand Only)
+</p>
+
+<div class="section-divider"></div>
+
+<h2>WHAT'S INCLUDED</h2>
+
+<h3 style="color: #1a5c2e; font-size: 13pt; margin-top: 20px;">Your Complete System</h3>
+<ul>
+    <li><strong>AGRO PRODUCTS Branding:</strong> Login portal and header branded as AGRO PRODUCTS Order Portal</li>
+    <li><strong>Full Order Flow:</strong> Customer → Head Office → Admin → Factory → Completed (Admin-only rejection)</li>
+    <li><strong>4 User Roles:</strong> Customer, Head Office, Admin, and Factory — each with their own login and relevant views</li>
+    <li><strong>Admin Dashboard:</strong> Pending approvals, order lists, and which Head Office user sent each order</li>
+    <li><strong>Admin Notes:</strong> Admin can add review notes visible to Head Office after approval</li>
+    <li><strong>Head Office Notes:</strong> Head Office adds feedback via notes — no reject button; only Admin can reject orders</li>
+    <li><strong>Admin Reject:</strong> Admin can reject orders with automatic notifications to Head Office and Customer</li>
+    <li><strong>Admin User Management:</strong> Users & Locations — create Head Office, Customer, and Factory users; optional location per customer</li>
+    <li><strong>Customer Portal:</strong> New Order picker (AG GROW / Sulfag), compact view after submit (ordered rows only), print table button</li>
+    <li><strong>Factory Portal:</strong> Text-value responses per line item; history shows only filled rows; pending queue and completed history</li>
+    <li><strong>Head Office:</strong> “With HO” status labelling; uses Head Office notes for feedback; no reject or delete access</li>
+    <li><strong>In-App Notifications:</strong> Bell icon and notifications page for updates at every workflow step</li>
+    <li><strong>Per-Product Remarks:</strong> Optional notes per product on both AG GROW and Sulfag order sheets</li>
+    <li><strong>Location Management:</strong> Create locations and optionally assign to customers</li>
+    <li><strong>Search & Filters:</strong> Order lists filterable by status; searchable by customer, location, or HO sender</li>
+    <li><strong>Role Privacy:</strong> Sensitive notes hidden from roles that should not see them</li>
+    <li><strong>Production Domain:</strong> Live at www.yourcropcare.in</li>
+    <li><strong>Catalog Management:</strong> Products auto-sorted alphabetically with automatic S.No; no manual serial entry</li>
+    <li><strong>Cleaner Order Forms:</strong> S.No column removed from order sheets for a simpler layout</li>
+    <li><strong>Mobile Friendly:</strong> Works perfectly on phones, tablets, and computers</li>
+    <li><strong>Sulfag Order Form:</strong> Dedicated new-order page for Sulfag (SP) with separate catalog and full four-step workflow</li>
+    <li><strong>Order Form Labels:</strong> AG GROW / Sulfag badges on all Head Office and Admin order lists</li>
+    <li><strong>Order History:</strong> Full audit trail — who did what, when</li>
+    <li><strong>Secure Login:</strong> Encrypted passwords, automatic session management</li>
+    <li><strong>Fresh Handoff:</strong> Production database reset with admin@agroproducts.com ready for client setup</li>
+</ul>
+
+<h3 style="color: #1a5c2e; font-size: 13pt; margin-top: 20px;">Hosting & Database</h3>
+<ul>
+    <li><strong>Server:</strong> Render.com (keeps the app running 24/7)</li>
+    <li><strong>Database:</strong> Neon PostgreSQL (cloud storage for all your data)</li>
+    <li><strong>Ongoing Cost:</strong> ~&#8377;585/month for Render</li>
+</ul>
+
+<div class="section-divider"></div>
+
+<h2>PAYMENT TERMS</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Milestone</th>
+            <th style="width: 120px; text-align: right;">Amount</th>
+            <th style="width: 100px; text-align: center;">Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Full Payment</td>
+            <td style="text-align: right;">&#8377;20,000</td>
+            <td style="text-align: center; color: #d9534f; font-weight: bold;">Due</td>
+        </tr>
+        <tr style="background-color: #eef7f0;">
+            <td><strong>TOTAL</strong></td>
+            <td style="text-align: right;"><strong>&#8377;20,000</strong></td>
+            <td></td>
+        </tr>
+    </tbody>
+</table>
+
+<p style="margin-top: 15px; font-size: 10.5pt; color: #666;">
+    <strong>Payment:</strong> &#8377;20,000 due upon project completion and client approval. Payment accepted via bank transfer, UPI, or cash.
+</p>
+
+<div class="highlight-box" style="margin-top: 15px;">
+    <p style="margin: 0 0 8px 0; font-weight: bold; color: #1a5c2e;">Payment Details</p>
+    <p style="margin: 4px 0; font-size: 10.5pt;"><strong>Account Name:</strong> Sai Sharan V</p>
+    <p style="margin: 4px 0; font-size: 10.5pt;"><strong>Bank:</strong> HDFC Bank</p>
+    <p style="margin: 4px 0; font-size: 10.5pt;"><strong>Account Number:</strong> 50100450942807</p>
+    <p style="margin: 4px 0; font-size: 10.5pt;"><strong>IFSC Code:</strong> HDFC0000269</p>
+    <p style="margin: 4px 0; font-size: 10.5pt;"><strong>UPI:</strong> 6383991383</p>
+</div>
+
+<div class="section-divider"></div>
+
+<h2>CONTACT</h2>
+<div style="margin: 15px 0; line-height: 2;">
+    <p><strong>Developer:</strong> Sai Sharan V</p>
+    <p><strong>Email:</strong> <a href="mailto:saisharanvishnu@gmail.com">saisharanvishnu@gmail.com</a></p>
+    <p><strong>Phone:</strong> +91 6383991383</p>
+    <p><strong>LinkedIn:</strong> <a href="https://www.linkedin.com/in/sai-sharan-vishnu/" target="_blank">linkedin.com/in/sai-sharan-vishnu</a></p>
+</div>
+
+<div class="section-divider"></div>
+
+<h2>TERMS & CONDITIONS</h2>
+<ol class="terms-list">
+    <li><strong>Currency:</strong> All prices are in Indian Rupees (INR)</li>
+    <li><strong>Payment Method:</strong> Bank transfer (HDFC), UPI (6383991383), or cash</li>
+    <li><strong>Payment Terms:</strong> &#8377;20,000 due upon project completion and client approval</li>
+    <li><strong>Ownership:</strong> Complete system and code ownership transfers to client upon final payment</li>
+    <li><strong>Hosting:</strong> Client is responsible for ongoing hosting costs (~&#8377;585/month for Render)</li>
+    <li><strong>Support:</strong> Post-delivery bug fixes and minor updates included (7 days)</li>
+    <li><strong>Out of Scope:</strong> New features, redesigns, and ongoing maintenance require separate agreement</li>
+    <li><strong>Data:</strong> Client manages product catalog and user accounts after delivery</li>
+</ol>
+
+<div class="section-divider"></div>
+
+<div style="margin-top: 40px; page-break-inside: avoid;">
+    <p><strong>Invoice Number:</strong> INV-2026-005</p>
+    <p><strong>Invoice Generated:</strong> June 21, 2026</p>
+    <p><strong>Invoice Valid Till:</strong> July 21, 2026</p>
+</div>
+
+<div style="margin-top: 60px; text-align: center;">
+    <p style="font-style: italic; color: #666; font-size: 12pt;">
+        Thank you for trusting me with AGRO PRODUCTS' order management system!
+    </p>
+</div>
+
+<div style="margin-top: 60px; display: flex; justify-content: space-between; page-break-inside: avoid;">
+    <div style="width: 45%;">
+        <p><strong>Client Signature:</strong></p>
+        <div style="border-bottom: 2px solid #333; width: 250px; margin-top: 40px;"></div>
+        <p style="margin-top: 10px; font-size: 10pt;">SULFAG PRODUCTS LIMITED</p>
+        <p style="font-size: 10pt;">Date: _______________</p>
+    </div>
+    <div style="width: 45%; text-align: right;">
+        <p><strong>Service Provider Signature:</strong></p>
+        <div style="border-bottom: 2px solid #333; width: 250px; margin-top: 40px; margin-left: auto;"></div>
+        <p style="margin-top: 10px; font-size: 10pt;">Sai Sharan V</p>
+        <p style="font-size: 10pt;">Date: _______________</p>
+    </div>
+</div>
+
+<div style="margin-top: 40px; text-align: center; font-size: 9pt; color: #999; border-top: 1px solid #e0e0e0; padding-top: 20px;">
+    <p>This is a computer-generated invoice. For authenticity, authorized signatures are required.</p>
+</div>
+
+</body>
+</html>

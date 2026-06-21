@@ -80,17 +80,6 @@ export default function HoOrderEdit() {
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to forward", "error"),
   });
 
-  const reject = useMutation({
-    mutationFn: (reason: string) => ordersApi.reject(orderId, reason),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["order", orderId] });
-      qc.invalidateQueries({ queryKey: ["orders"] });
-      showToast("Order rejected successfully");
-      navigate("/ho/orders");
-    },
-    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to reject", "error"),
-  });
-
   if (!order || !catalog) return <div className="text-slate-500">Loading…</div>;
 
   const editable = order.status === "SUBMITTED_TO_HO";
@@ -111,16 +100,6 @@ export default function HoOrderEdit() {
         <div className="flex gap-2 flex-wrap">
           {editable && (
             <>
-              <button
-                className="btn-danger text-sm"
-                disabled={reject.isPending}
-                onClick={() => {
-                  const reason = window.prompt("Rejection reason (optional):") ?? "";
-                  if (reason !== null) reject.mutate(reason);
-                }}
-              >
-                Reject
-              </button>
               <button className="btn-secondary text-sm" disabled={save.isPending} onClick={() => save.mutate()}>
                 Save Edits
               </button>
@@ -146,7 +125,12 @@ export default function HoOrderEdit() {
       <div className="card p-3 md:p-4">
         <label className="block text-xs md:text-sm font-medium text-slate-700 mb-1">Head office note</label>
         {editable ? (
-          <textarea className="input text-sm" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          <>
+            <p className="text-xs text-slate-500 mb-2">
+              Use this note for feedback or instructions to Admin. Head Office cannot reject orders — only Admin can reject.
+            </p>
+            <textarea className="input text-sm" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          </>
         ) : (
           <p className="text-xs md:text-sm whitespace-pre-wrap">{order.ho_note || "—"}</p>
         )}

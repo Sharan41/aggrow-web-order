@@ -182,22 +182,9 @@ def reject_order(
     order_id: int,
     body: HoRejectBody,
     db: Session = Depends(get_db),
-    user: User = Depends(require_role(UserRole.HEAD_OFFICE, UserRole.ADMIN)),
-) -> OrderDetail:
-    if user.role == UserRole.HEAD_OFFICE:
-        order = wf.ho_reject(db, order_id, user, body.reason)
-    else:
-        order = wf.admin_reject(db, order_id, user, body.reason)
-    return OrderDetail.from_model(order, viewer_role=user.role)
-
-
-@router.post("/{order_id}/revoke", response_model=OrderDetail)
-def revoke_rejected_order(
-    order_id: int,
-    db: Session = Depends(get_db),
     user: User = Depends(require_role(UserRole.ADMIN)),
 ) -> OrderDetail:
-    order = wf.admin_revoke_rejection(db, order_id, user)
+    order = wf.admin_reject(db, order_id, user, body.reason)
     return OrderDetail.from_model(order, viewer_role=user.role)
 
 

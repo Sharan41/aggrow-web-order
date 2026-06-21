@@ -197,7 +197,7 @@ def test_cannot_forward_without_ho_qty(client, seed, tokens):
     assert r.status_code == 400
 
 
-def test_ho_reject_notifies_customer_and_admin(client, seed, tokens):
+def test_ho_cannot_reject_orders(client, seed, tokens):
     product_id = seed["product"].id
     r = client.post(
         "/orders",
@@ -211,14 +211,7 @@ def test_ho_reject_notifies_customer_and_admin(client, seed, tokens):
         headers=_h(tokens["ho"]),
         json={"reason": "No stock"},
     )
-    assert r.status_code == 200
-    assert r.json()["status"] == "REJECTED"
-
-    r = client.get("/notifications", headers=_h(tokens["customer"]))
-    assert any(n["type"] == "ORDER_REJECTED" for n in r.json())
-
-    r = client.get("/notifications", headers=_h(tokens["admin"]))
-    assert any(n["type"] == "ORDER_REJECTED" for n in r.json())
+    assert r.status_code == 403
 
 
 def test_admin_reject_notifies_ho_and_customer(client, seed, tokens):

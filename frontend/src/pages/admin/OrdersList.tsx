@@ -43,25 +43,9 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to delete order", "error"),
   });
 
-  const revokeMutation = useMutation({
-    mutationFn: (orderId: number) => ordersApi.revoke(orderId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["orders"] });
-      qc.invalidateQueries({ queryKey: ["kpis"] });
-      showToast("Order restored to live workflow");
-    },
-    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to revoke", "error"),
-  });
-
   const handleDelete = (order: OrderSummary) => {
     if (window.confirm(`Are you sure you want to delete order #${order.id}? This action cannot be undone.`)) {
       deleteMutation.mutate(order.id);
-    }
-  };
-
-  const handleRevoke = (order: OrderSummary) => {
-    if (window.confirm(`Restore order #${order.id} to live workflow?`)) {
-      revokeMutation.mutate(order.id);
     }
   };
 
@@ -152,16 +136,6 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
                       <Link to={`/admin/orders/${o.id}`} className="text-brand-700 hover:underline">
                         Open
                       </Link>
-                      {o.status === "REJECTED" && (
-                        <button
-                          onClick={() => handleRevoke(o)}
-                          disabled={revokeMutation.isPending}
-                          className="text-brand-700 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Revoke rejection"
-                        >
-                          Revoke
-                        </button>
-                      )}
                       {o.status === "COMPLETED" && (
                         <button
                           onClick={() => handleDelete(o)}
