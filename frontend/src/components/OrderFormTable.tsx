@@ -333,6 +333,7 @@ function GroupTable({
         <table className="min-w-full border-collapse text-xs md:text-sm">
           <thead>
             <tr className="bg-slate-100">
+              <th className="border px-1 md:px-2 py-1 text-center w-10 md:w-12 whitespace-nowrap">S.NO</th>
               <th className="border px-1 md:px-2 py-1 text-left min-w-[180px] md:min-w-[220px]">Product</th>
               <th className="border px-1 md:px-2 py-1 text-left w-20 md:w-24">Packing</th>
               {headers.map((h) => (
@@ -399,6 +400,7 @@ function ProductRow({
 
   return (
     <tr className="even:bg-slate-50">
+      <td className="border px-1 md:px-2 py-1 align-top text-center text-slate-600 text-xs md:text-sm">{product.s_no}</td>
       <td className="border px-1 md:px-2 py-1 align-top font-medium text-xs md:text-sm">{product.name}</td>
       <td className="border px-1 md:px-2 py-1 align-top text-slate-500 text-xs md:text-sm">
         {product.packing_type ?? "—"}
