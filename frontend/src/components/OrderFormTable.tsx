@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Catalog, OrderItem, PackingGroup, Product } from "../types";
+import { packingGroupUnitSuffix } from "../utils/packingGroupUnitLabel";
 
 export type FormMode =
   | "customer-edit"
@@ -324,10 +325,13 @@ function GroupTable({
   });
   if (products.length === 0 || headers.length === 0) return null;
 
+  const unitSuffix = packingGroupUnitSuffix(group);
+
   return (
     <div>
       <h3 className="text-xs md:text-sm font-medium text-slate-600 mb-2">
-        {group.label} (All in cases)
+        {group.label}
+        {unitSuffix ? ` (${unitSuffix})` : ""}
       </h3>
       <div className="overflow-auto">
         <table className="min-w-full border-collapse text-xs md:text-sm">

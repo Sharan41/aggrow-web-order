@@ -93,9 +93,16 @@ export default function FactoryOrderRespond() {
         )}
       </div>
 
+      {order.ho_note && (
+        <div className="card p-3 md:p-4 border-l-4 border-amber-400">
+          <div className="text-xs uppercase text-amber-700 font-medium mb-1">Head office note</div>
+          <p className="text-xs md:text-sm whitespace-pre-wrap">{order.ho_note}</p>
+        </div>
+      )}
+
       {order.admin_note && (
-        <div className="card p-3 md:p-4">
-          <div className="text-xs uppercase text-orange-700 font-medium">Admin note</div>
+        <div className="card p-3 md:p-4 border-l-4 border-orange-400">
+          <div className="text-xs uppercase text-orange-700 font-medium mb-1">Admin note</div>
           <p className="text-xs md:text-sm whitespace-pre-wrap">{order.admin_note}</p>
         </div>
       )}
