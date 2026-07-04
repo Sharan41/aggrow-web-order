@@ -15,6 +15,7 @@ interface Props {
 
 const STATUS_OPTIONS: (OrderStatus | "")[] = [
   "",
+  "DRAFT",
   "SUBMITTED_TO_HO",
   "SUBMITTED_TO_ADMIN",
   "HO_FORWARDED",
@@ -139,16 +140,14 @@ export function OrdersList({ defaultStatus, title, filter }: Props) {
                       <Link to={`/admin/orders/${o.id}`} className="text-brand-700 hover:underline">
                         Open
                       </Link>
-                      {o.status === "COMPLETED" && (
-                        <button
-                          onClick={() => handleDelete(o)}
-                          disabled={deleteMutation.isPending}
-                          className="text-red-600 hover:text-red-800 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Delete order"
-                        >
-                          Delete
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDelete(o)}
+                        disabled={deleteMutation.isPending}
+                        className="text-red-600 hover:text-red-800 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Delete order"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>

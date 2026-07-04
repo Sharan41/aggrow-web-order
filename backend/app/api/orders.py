@@ -218,10 +218,5 @@ def delete_order(
     order = db.execute(select(Order).where(Order.id == order_id)).scalar_one_or_none()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    if order.status != OrderStatus.COMPLETED:
-        raise HTTPException(
-            status_code=400,
-            detail="Only COMPLETED orders can be deleted",
-        )
     db.delete(order)
     db.commit()

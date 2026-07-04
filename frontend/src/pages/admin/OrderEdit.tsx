@@ -105,7 +105,6 @@ export default function AdminOrderEdit() {
   if (!order || !catalog) return <div className="text-slate-500">Loading…</div>;
 
   const editable = order.status === "SUBMITTED_TO_ADMIN";
-  const canDelete = order.status === "COMPLETED";
   const hasFactoryResponse = order.status === "FACTORY_RESPONDED" || order.status === "COMPLETED";
   const tableMode = editable ? "ho-edit" : hasFactoryResponse ? "ho-view-response" : "ho-view";
 
@@ -155,15 +154,13 @@ export default function AdminOrderEdit() {
               </button>
             </>
           )}
-          {canDelete && (
-            <button
-              className="btn-danger text-sm"
-              disabled={deleteOrder.isPending}
-              onClick={handleDelete}
-            >
-              Delete Order
-            </button>
-          )}
+          <button
+            className="btn-danger text-sm"
+            disabled={deleteOrder.isPending}
+            onClick={handleDelete}
+          >
+            Delete Order
+          </button>
         </div>
       </div>
 

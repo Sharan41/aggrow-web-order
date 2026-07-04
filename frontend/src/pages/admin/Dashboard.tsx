@@ -97,16 +97,14 @@ export default function AdminDashboard() {
                     <Link to={`/admin/orders/${o.id}`} className="text-brand-700 hover:underline">
                       Open
                     </Link>
-                    {o.status === "COMPLETED" && (
-                      <button
-                        onClick={() => handleDelete(o)}
-                        disabled={deleteMutation.isPending}
-                        className="text-red-600 hover:text-red-800 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Delete order"
-                      >
-                        Delete
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleDelete(o)}
+                      disabled={deleteMutation.isPending}
+                      className="text-red-600 hover:text-red-800 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Delete order"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </td>
               </tr>

@@ -244,3 +244,35 @@ def test_admin_reject_notifies_ho_and_customer(client, seed, tokens):
 
     r = client.get("/notifications", headers=_h(tokens["ho"]))
     assert any(n["type"] == "ORDER_REJECTED" for n in r.json())
+
+
+def test_admin_can_delete_order_in_any_status(client, seed, tokens):
+    product_id = seed["product"].id
+
+    r = client.post(
+        "/orders",
+        headers=_h(tokens["customer"]),
+        json={"items": [{"product_id": product_id, "size_label": "30ml", "qty": 1}]},
+    )
+    assert r.status_code == 201
+    draft_id = r.json()["id"]
+
+    r = client.delete(f"/orders/{draft_id}", headers=_h(tokens["admin"]))
+    assert r.status_code == 204
+
+    r = client.get(f"/orders/{draft_id}", headers=_h(tokens["admin"]))
+    assert r.status_code == 404
+
+    r = client.post(
+        "/orders",
+        headers=_h(tokens["customer"]),
+        json={"items": [{"product_id": product_id, "size_label": "30ml", "qty": 1}]},
+    )
+    submitted_id = r.json()["id"]
+    client.post(f"/orders/{submitted_id}/submit", headers=_h(tokens["customer"]))
+
+    r = client.delete(f"/orders/{submitted_id}", headers=_h(tokens["admin"]))
+    assert r.status_code == 204
+
+    r = client.delete(f"/orders/{submitted_id}", headers=_h(tokens["customer"]))
+    assert r.status_code == 403
