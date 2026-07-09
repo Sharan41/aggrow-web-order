@@ -45,6 +45,16 @@ export default function HoCatalog() {
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to create group", "error"),
   });
 
+  const updateGroup = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: { label?: string; column_headers?: string[] } }) =>
+      catalogApi.updatePackingGroup(id, body),
+    onSuccess: () => {
+      invalidate();
+      showToast("Columns updated successfully");
+    },
+    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to update columns", "error"),
+  });
+
   const deleteGroup = useMutation({
     mutationFn: (id: number) => catalogApi.deletePackingGroup(id),
     onSuccess: () => {
@@ -173,6 +183,7 @@ export default function HoCatalog() {
               key={pg.id}
               group={pg}
               onDelete={() => deleteGroup.mutate(pg.id)}
+              onUpdateGroup={(body) => updateGroup.mutate({ id: pg.id, body })}
               onAddProduct={(body) => createProduct.mutate(body)}
               onUpdateProduct={(id, body) => updateProduct.mutate({ id, body })}
               onDeleteProduct={(id) => deleteProduct.mutate(id)}
@@ -230,6 +241,7 @@ function NewGroupForm({
 interface GroupEditorProps {
   group: PackingGroup;
   onDelete: () => void;
+  onUpdateGroup: (body: { label?: string; column_headers?: string[] }) => void;
   onAddProduct: (body: {
     packing_group_id: number;
     name: string;
@@ -246,6 +258,7 @@ interface GroupEditorProps {
 function GroupEditor({
   group,
   onDelete,
+  onUpdateGroup,
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
@@ -254,6 +267,25 @@ function GroupEditor({
   const [pType, setPType] = useState("");
   const [pSizes, setPSizes] = useState<Set<string>>(new Set());
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [newColumn, setNewColumn] = useState("");
+
+  const addColumn = () => {
+    const col = newColumn.trim();
+    if (!col) return;
+    const exists = group.column_headers.some(
+      (h) => h.toLowerCase() === col.toLowerCase(),
+    );
+    if (exists) return;
+    onUpdateGroup({ column_headers: [...group.column_headers, col] });
+    setNewColumn("");
+  };
+
+  const removeColumn = (header: string) => {
+    if (!confirm(`Remove the "${header}" column from "${group.label}"?`)) return;
+    onUpdateGroup({
+      column_headers: group.column_headers.filter((h) => h !== header),
+    });
+  };
 
   const sortedProducts = [...group.products].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
@@ -268,12 +300,49 @@ function GroupEditor({
 
   return (
     <div className="border border-slate-200 rounded-md p-3 space-y-2">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2">
         <div className="font-medium text-sm">{group.label}</div>
-        <div className="text-xs text-slate-500 flex items-center gap-3 flex-wrap">
-          <span>{group.column_headers.join(" · ")}</span>
-          <button className="text-rose-600 hover:underline" onClick={onDelete}>
-            delete group
+        <button
+          className="text-xs text-rose-600 hover:underline self-start md:order-2"
+          onClick={onDelete}
+        >
+          delete group
+        </button>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 md:order-1">
+          {group.column_headers.map((h) => (
+            <span
+              key={h}
+              className="inline-flex items-center gap-1 rounded border border-slate-300 bg-slate-50 px-1.5 py-0.5"
+            >
+              {h}
+              <button
+                type="button"
+                className="text-rose-500 hover:text-rose-700 leading-none"
+                title={`Remove ${h} column`}
+                onClick={() => removeColumn(h)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <input
+            className="input h-6 w-24 px-1.5 py-0 text-xs"
+            placeholder="New column"
+            value={newColumn}
+            onChange={(e) => setNewColumn(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addColumn();
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="text-brand-600 hover:underline"
+            onClick={addColumn}
+          >
+            add column
           </button>
         </div>
       </div>
