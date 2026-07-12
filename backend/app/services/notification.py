@@ -11,12 +11,33 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.models import Notification, Order, User, UserRole
+from app.models.form_type import OrderFormType
 from app.models.notification import NotificationType
 from app.services.email import send_email
 from app.services.sms import send_sms
 from app.services.whatsapp import send_whatsapp
 
 logger = logging.getLogger(__name__)
+
+_FORM_TYPE_LABELS = {
+    OrderFormType.AG_GROW: "AG Grow",
+    OrderFormType.SULFAG: "Sulfag",
+}
+
+
+def _order_summary(order: Order, qty_attr: str = "customer_qty") -> str:
+    """Compact one-line summary: '<Type> · N products · M units'.
+
+    *qty_attr* selects which quantity drives the counts (``customer_qty`` for the
+    amount the customer ordered, ``ho_qty`` for the amount Head Office approved).
+    """
+    type_label = _FORM_TYPE_LABELS.get(order.order_form_type, str(order.order_form_type))
+    items = [it for it in order.items if getattr(it, qty_attr, 0) > 0]
+    product_count = len({it.product_id for it in items})
+    total_units = sum(getattr(it, qty_attr, 0) for it in items)
+    product_word = "product" if product_count == 1 else "products"
+    unit_word = "unit" if total_units == 1 else "units"
+    return f"{type_label} · {product_count} {product_word} · {total_units} {unit_word}"
 
 
 def _users_by_role(db: Session, role: UserRole) -> list[User]:
@@ -93,7 +114,11 @@ def fan_out_submitted(db: Session, order: Order) -> None:
             f"<p>Please review and forward to admin.</p>"
         ),
     )
-    _send_mobile_bg(recipients, f"[AG Grow] New order #{order.id} submitted by {order.customer.name}. Please review.")
+    _send_mobile_bg(
+        recipients,
+        f"[AG Grow] New order #{order.id} from {order.customer.name} — "
+        f"{_order_summary(order, 'customer_qty')}. Please review.",
+    )
 
 
 def fan_out_ho_forwarded_to_admin(db: Session, order: Order, ho_actor: User) -> None:
@@ -115,7 +140,8 @@ def fan_out_ho_forwarded_to_admin(db: Session, order: Order, ho_actor: User) -> 
     )
     _send_mobile_bg(
         recipients,
-        f"[AG Grow] Order #{order.id} forwarded by {ho_actor.name} (HO). Please review.",
+        f"[AG Grow] Order #{order.id} from {order.customer.name} forwarded by {ho_actor.name} (HO) — "
+        f"{_order_summary(order, 'ho_qty')}. Please review.",
     )
 
 
@@ -136,7 +162,8 @@ def fan_out_forwarded(db: Session, order: Order, admin_actor: User) -> None:
     )
     _send_mobile_bg(
         recipients,
-        f"[AG Grow] Order #{order.id} forwarded by {admin_actor.name} (Admin). Please respond with availability.",
+        f"[AG Grow] Order #{order.id} from {order.customer.name} forwarded by {admin_actor.name} (Admin) — "
+        f"{_order_summary(order, 'ho_qty')}. Please respond with availability.",
     )
 
 
@@ -158,7 +185,11 @@ def fan_out_factory_responded(db: Session, order: Order) -> None:
             f"<p>Please log in to review item availability and the factory note.</p>"
         ),
     )
-    _send_mobile_bg(all_ops, f"[AG Grow] Factory responded to order #{order.id}. Log in to review.")
+    _send_mobile_bg(
+        all_ops,
+        f"[AG Grow] Factory responded to order #{order.id} from {order.customer.name} — "
+        f"{_order_summary(order, 'ho_qty')}. Log in to review.",
+    )
 
     customer_message = f"Your order #{order.id} has been processed and completed."
     customer_recipients = _notify(db, [order.customer], order, NotificationType.ORDER_RESPONDED, customer_message)
@@ -170,7 +201,11 @@ def fan_out_factory_responded(db: Session, order: Order) -> None:
             f"<p>Your order <b>#{order.id}</b> has been completed. Please log in to view the status.</p>"
         ),
     )
-    _send_mobile_bg(customer_recipients, f"[AG Grow] Your order #{order.id} has been completed. Log in to view details.")
+    _send_mobile_bg(
+        customer_recipients,
+        f"[AG Grow] Your order #{order.id} ({_order_summary(order, 'customer_qty')}) "
+        f"has been completed. Log in to view details.",
+    )
 
 
 def fan_out_ho_rejected(db: Session, order: Order) -> None:
@@ -194,7 +229,11 @@ def fan_out_ho_rejected(db: Session, order: Order) -> None:
             f"<p>Please log in to view the note.</p>"
         ),
     )
-    _send_mobile_bg(customer_recipients, f"[AG Grow] Your order #{order.id} was rejected by Head Office. Log in for details.")
+    _send_mobile_bg(
+        customer_recipients,
+        f"[AG Grow] Your order #{order.id} ({_order_summary(order, 'customer_qty')}) "
+        f"was rejected by Head Office. Log in for details.",
+    )
     _send_emails_bg(
         admin_recipients,
         subject=f"[AG Grow] Order #{order.id} rejected by Head Office",
@@ -204,7 +243,11 @@ def fan_out_ho_rejected(db: Session, order: Order) -> None:
             f"<p>Please log in to view details.</p>"
         ),
     )
-    _send_mobile_bg(admin_recipients, f"[AG Grow] Order #{order.id} rejected by Head Office.")
+    _send_mobile_bg(
+        admin_recipients,
+        f"[AG Grow] Order #{order.id} from {order.customer.name} "
+        f"({_order_summary(order, 'customer_qty')}) rejected by Head Office.",
+    )
 
 
 def fan_out_admin_rejected(db: Session, order: Order) -> None:
@@ -228,7 +271,11 @@ def fan_out_admin_rejected(db: Session, order: Order) -> None:
             f"<p>Please log in to view the note.</p>"
         ),
     )
-    _send_mobile_bg(customer_recipients, f"[AG Grow] Your order #{order.id} was rejected by Admin. Log in for details.")
+    _send_mobile_bg(
+        customer_recipients,
+        f"[AG Grow] Your order #{order.id} ({_order_summary(order, 'customer_qty')}) "
+        f"was rejected by Admin. Log in for details.",
+    )
     _send_emails_bg(
         ho_recipients,
         subject=f"[AG Grow] Order #{order.id} rejected by Admin",
@@ -238,4 +285,8 @@ def fan_out_admin_rejected(db: Session, order: Order) -> None:
             f"<p>Please log in to view details.</p>"
         ),
     )
-    _send_mobile_bg(ho_recipients, f"[AG Grow] Order #{order.id} rejected by Admin.")
+    _send_mobile_bg(
+        ho_recipients,
+        f"[AG Grow] Order #{order.id} from {order.customer.name} "
+        f"({_order_summary(order, 'customer_qty')}) rejected by Admin.",
+    )
