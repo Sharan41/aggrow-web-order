@@ -28,4 +28,5 @@ export const usersApi = {
       branch_id?: number | null;
     },
   ) => apiClient.patch<User>(`/users/${id}`, body).then((r) => r.data),
+  deleteUser: (id: number) => apiClient.delete(`/users/${id}`).then((r) => r.data),
 };

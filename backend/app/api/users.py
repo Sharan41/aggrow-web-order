@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.db import get_db
 from app.core.deps import require_role
 from app.core.security import hash_password
-from app.models import Branch, User, UserRole
+from app.models import Branch, Notification, Order, OrderEvent, User, UserRole
 from app.schemas.user import (
     BranchCreate,
     BranchRead,
@@ -125,3 +125,38 @@ def update_user(
     db.commit()
     db.refresh(user)
     return UserRead.model_validate(user)
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    actor: User = Depends(admin_only),
+) -> None:
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.id == actor.id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own account")
+    if user.role == UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin users cannot be deleted")
+
+    # Orders reference the customer with RESTRICT — refuse rather than orphan them.
+    has_orders = db.execute(
+        select(Order.id).where(Order.customer_id == user_id).limit(1)
+    ).first()
+    if has_orders:
+        raise HTTPException(
+            status_code=409,
+            detail="This user has existing orders and cannot be deleted. Deactivate the user instead.",
+        )
+
+    # Clear remaining references explicitly so behaviour is identical on SQLite
+    # (no FK enforcement) and Postgres (SET NULL / CASCADE).
+    db.execute(update(Order).where(Order.ho_reviewer_id == user_id).values(ho_reviewer_id=None))
+    db.execute(update(Order).where(Order.admin_reviewer_id == user_id).values(admin_reviewer_id=None))
+    db.execute(update(OrderEvent).where(OrderEvent.actor_user_id == user_id).values(actor_user_id=None))
+    db.execute(delete(Notification).where(Notification.user_id == user_id))
+    db.delete(user)
+    db.commit()
+    return None

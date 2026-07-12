@@ -3,11 +3,13 @@ import { useState } from "react";
 import { getApiErrorMessage } from "../../api/errorMessage";
 import { usersApi } from "../../api/users";
 import { useToast } from "../../components/Toast";
+import { useAuth } from "../../auth/AuthContext";
 import type { User, UserRole } from "../../types";
 
 export default function HoUsers() {
   const qc = useQueryClient();
   const { showToast } = useToast();
+  const { user: currentUser } = useAuth();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => usersApi.listUsers() });
   const { data: branches } = useQuery({
@@ -71,6 +73,15 @@ export default function HoUsers() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
       showToast(updateUser.variables?.data.active ? "User activated" : "User deactivated");
+    },
+    onError: (err) => showToast(getApiErrorMessage(err), "error"),
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: (id: number) => usersApi.deleteUser(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      showToast("User deleted successfully");
     },
     onError: (err) => showToast(getApiErrorMessage(err), "error"),
   });
@@ -153,6 +164,23 @@ export default function HoUsers() {
                 >
                   Edit
                 </button>
+                {u.role !== "ADMIN" && u.id !== currentUser?.id && (
+                  <button
+                    className="text-xs py-1 px-3 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                    disabled={deleteUser.isPending}
+                    onClick={() => {
+                      if (
+                        confirm(
+                          `Delete user "${u.name}"? This permanently removes their account and cannot be undone.`,
+                        )
+                      ) {
+                        deleteUser.mutate(u.id);
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           ))}
