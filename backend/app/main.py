@@ -70,7 +70,26 @@ app.add_middleware(
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok"}
+    if settings.WHATSAPP_ENABLED:
+        active_mobile_channel = "whatsapp"
+    elif settings.SMS_ENABLED:
+        active_mobile_channel = "sms"
+    else:
+        active_mobile_channel = "none"
+    return {
+        "status": "ok",
+        "notifications": {
+            "email_enabled": settings.MAIL_ENABLED,
+            "sms_enabled": settings.SMS_ENABLED,
+            "whatsapp_enabled": settings.WHATSAPP_ENABLED,
+            "active_mobile_channel": active_mobile_channel,
+            "twilio_credentials_present": bool(
+                settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN
+            ),
+            "sms_from_configured": bool(settings.TWILIO_FROM_NUMBER),
+            "whatsapp_from_configured": bool(settings.TWILIO_WHATSAPP_FROM),
+        },
+    }
 
 
 app.include_router(auth.router)
