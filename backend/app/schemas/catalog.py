@@ -72,6 +72,8 @@ class PackingGroupCreate(BaseModel):
 class PackingGroupUpdate(BaseModel):
     label: str | None = None
     column_headers: list[str] | None = None
+    add_column: str | None = None
+    remove_column: str | None = None
     display_order: int | None = None
 
 

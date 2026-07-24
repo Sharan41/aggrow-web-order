@@ -46,8 +46,13 @@ export default function HoCatalog() {
   });
 
   const updateGroup = useMutation({
-    mutationFn: ({ id, body }: { id: number; body: { label?: string; column_headers?: string[] } }) =>
-      catalogApi.updatePackingGroup(id, body),
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: number;
+      body: { label?: string; column_headers?: string[]; add_column?: string; remove_column?: string };
+    }) => catalogApi.updatePackingGroup(id, body),
     onSuccess: () => {
       invalidate();
       showToast("Columns updated successfully");
@@ -241,7 +246,7 @@ function NewGroupForm({
 interface GroupEditorProps {
   group: PackingGroup;
   onDelete: () => void;
-  onUpdateGroup: (body: { label?: string; column_headers?: string[] }) => void;
+  onUpdateGroup: (body: { label?: string; column_headers?: string[]; add_column?: string; remove_column?: string }) => void;
   onAddProduct: (body: {
     packing_group_id: number;
     name: string;
@@ -276,15 +281,17 @@ function GroupEditor({
       (h) => h.toLowerCase() === col.toLowerCase(),
     );
     if (exists) return;
-    onUpdateGroup({ column_headers: [...group.column_headers, col] });
+    // Send an atomic add-column op (server appends to its own current column_headers)
+    // instead of a full-array replace derived from this possibly-stale `group` prop —
+    // otherwise two rapid adds both read the same pre-update array and the second
+    // PATCH silently overwrites the first (last-write-wins).
+    onUpdateGroup({ add_column: col });
     setNewColumn("");
   };
 
   const removeColumn = (header: string) => {
     if (!confirm(`Remove the "${header}" column from "${group.label}"?`)) return;
-    onUpdateGroup({
-      column_headers: group.column_headers.filter((h) => h !== header),
-    });
+    onUpdateGroup({ remove_column: header });
   };
 
   const sortedProducts = [...group.products].sort((a, b) =>

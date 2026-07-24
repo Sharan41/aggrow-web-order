@@ -117,7 +117,18 @@ def update_packing_group(
     pg = db.get(PackingGroup, group_id)
     if not pg:
         raise HTTPException(status_code=404, detail="Packing group not found")
-    for k, v in body.model_dump(exclude_unset=True).items():
+    data = body.model_dump(exclude_unset=True)
+    add_column = data.pop("add_column", None)
+    remove_column = data.pop("remove_column", None)
+    # add_column/remove_column mutate the server's own current column_headers rather than
+    # trusting a client-supplied full array, so two rapid add/remove calls can't race and
+    # silently overwrite each other via a stale client copy.
+    if add_column is not None:
+        if not any(h.lower() == add_column.lower() for h in pg.column_headers):
+            pg.column_headers = [*pg.column_headers, add_column]
+    if remove_column is not None:
+        pg.column_headers = [h for h in pg.column_headers if h != remove_column]
+    for k, v in data.items():
         setattr(pg, k, v)
     db.commit()
     db.refresh(pg)

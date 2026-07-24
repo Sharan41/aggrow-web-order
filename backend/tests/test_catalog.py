@@ -78,6 +78,56 @@ def test_products_auto_sorted_alphabetically(client, seed, tokens):
     assert [p["s_no"] for p in products] == list(range(1, len(products) + 1))
 
 
+def test_add_column_sequential_calls_both_persist(client, seed, tokens):
+    group_id = seed["group"].id
+    r1 = client.patch(
+        f"/catalog/packing-groups/{group_id}",
+        headers=auth(tokens["admin"]),
+        json={"add_column": "150ml"},
+    )
+    assert r1.status_code == 200, r1.text
+    r2 = client.patch(
+        f"/catalog/packing-groups/{group_id}",
+        headers=auth(tokens["admin"]),
+        json={"add_column": "200ml"},
+    )
+    assert r2.status_code == 200, r2.text
+    assert r2.json()["column_headers"] == ["30ml", "50ml", "100ml", "150ml", "200ml"]
+
+
+def test_add_column_rejects_case_insensitive_duplicate(client, seed, tokens):
+    group_id = seed["group"].id
+    r = client.patch(
+        f"/catalog/packing-groups/{group_id}",
+        headers=auth(tokens["admin"]),
+        json={"add_column": "30ML"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["column_headers"] == ["30ml", "50ml", "100ml"]
+
+
+def test_remove_column(client, seed, tokens):
+    group_id = seed["group"].id
+    r = client.patch(
+        f"/catalog/packing-groups/{group_id}",
+        headers=auth(tokens["admin"]),
+        json={"remove_column": "50ml"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["column_headers"] == ["30ml", "100ml"]
+
+
+def test_update_packing_group_full_column_replace_still_works(client, seed, tokens):
+    group_id = seed["group"].id
+    r = client.patch(
+        f"/catalog/packing-groups/{group_id}",
+        headers=auth(tokens["admin"]),
+        json={"column_headers": ["1L", "5L"]},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["column_headers"] == ["1L", "5L"]
+
+
 def test_product_invalid_size_rejected(client, seed, tokens):
     group_id = seed["group"].id
     r = client.post(

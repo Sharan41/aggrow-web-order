@@ -17,7 +17,13 @@ export const catalogApi = {
   }) => apiClient.post("/catalog/packing-groups", body).then((r) => r.data),
   updatePackingGroup: (
     id: number,
-    body: { label?: string; column_headers?: string[]; display_order?: number },
+    body: {
+      label?: string;
+      column_headers?: string[];
+      add_column?: string;
+      remove_column?: string;
+      display_order?: number;
+    },
   ) => apiClient.patch(`/catalog/packing-groups/${id}`, body).then((r) => r.data),
   deletePackingGroup: (id: number) => apiClient.delete(`/catalog/packing-groups/${id}`),
   createProduct: (body: {
