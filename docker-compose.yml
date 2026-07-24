@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aggrow
+      POSTGRES_PASSWORD: aggrow
+      POSTGRES_DB: aggrow
+    ports:
+      - "5432:5432"
+    volumes:
+      - aggrow_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "aggrow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://aggrow:aggrow@db:5432/aggrow
+      FRONTEND_ORIGIN: http://localhost:5173
+      CATALOG_EXCEL_PATH: /app/AG - ORDER FORM excel.xlsx
+      SULFAG_CATALOG_EXCEL_PATH: /app/2026.05 PRODUCTS LIST (SP).xlsx
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - "./AG - ORDER FORM excel.xlsx:/app/AG - ORDER FORM excel.xlsx:ro"
+      - "./2026.05 PRODUCTS LIST (SP).xlsx:/app/2026.05 PRODUCTS LIST (SP).xlsx:ro"
+    command: bash -c "alembic upgrade head && python -m app.db.seed --all && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - backend
+
+volumes:
+  aggrow_pg:

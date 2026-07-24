@@ -1,0 +1,33 @@
+# Secrets — never commit
+.env
+backend/.env
+*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+backend/.venv/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# SQLite (local databases)
+*.db
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+
+# Local tooling / agent bundles — not part of app source
+.cursor/
+.bmad-core/
+web-bundles/
