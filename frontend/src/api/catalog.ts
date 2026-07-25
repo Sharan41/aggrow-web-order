@@ -25,6 +25,10 @@ export const catalogApi = {
       display_order?: number;
     },
   ) => apiClient.patch(`/catalog/packing-groups/${id}`, body).then((r) => r.data),
+  renamePackingGroupColumn: (id: number, old_header: string, new_header: string) =>
+    apiClient
+      .patch(`/catalog/packing-groups/${id}/rename-column`, { old_header, new_header })
+      .then((r) => r.data),
   deletePackingGroup: (id: number) => apiClient.delete(`/catalog/packing-groups/${id}`),
   createProduct: (body: {
     packing_group_id: number;

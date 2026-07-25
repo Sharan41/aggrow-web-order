@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.db import get_db
@@ -11,6 +11,7 @@ from app.schemas.catalog import (
     CategoryCreate,
     CategoryRead,
     CategoryUpdate,
+    PackingGroupColumnRename,
     PackingGroupCreate,
     PackingGroupRead,
     PackingGroupUpdate,
@@ -130,6 +131,50 @@ def update_packing_group(
         pg.column_headers = [h for h in pg.column_headers if h != remove_column]
     for k, v in data.items():
         setattr(pg, k, v)
+    db.commit()
+    db.refresh(pg)
+    return PackingGroupRead.model_validate(pg)
+
+
+@router.patch("/packing-groups/{group_id}/rename-column", response_model=PackingGroupRead)
+def rename_packing_group_column(
+    group_id: int,
+    body: PackingGroupColumnRename,
+    db: Session = Depends(get_db),
+    _: User = Depends(admin_only),
+) -> PackingGroupRead:
+    pg = db.get(PackingGroup, group_id)
+    if not pg:
+        raise HTTPException(status_code=404, detail="Packing group not found")
+    old = body.old_header
+    new = body.new_header.strip()
+    if not new:
+        raise HTTPException(status_code=400, detail="Column name cannot be empty")
+    if old not in pg.column_headers:
+        raise HTTPException(status_code=404, detail="Column not found in this group")
+    if new == old:
+        return PackingGroupRead.model_validate(pg)
+    if any(h != old and h.lower() == new.lower() for h in pg.column_headers):
+        raise HTTPException(status_code=409, detail="A column with that name already exists")
+
+    pg.column_headers = [new if h == old else h for h in pg.column_headers]
+
+    # Migrate stored product availability so it stays linked to the renamed column.
+    product_ids = [
+        pid
+        for (pid,) in db.execute(
+            select(Product.id).where(Product.packing_group_id == group_id)
+        ).all()
+    ]
+    if product_ids:
+        db.execute(
+            update(ProductPacking)
+            .where(
+                ProductPacking.product_id.in_(product_ids),
+                ProductPacking.size_label == old,
+            )
+            .values(size_label=new)
+        )
     db.commit()
     db.refresh(pg)
     return PackingGroupRead.model_validate(pg)

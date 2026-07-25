@@ -60,6 +60,16 @@ export default function HoCatalog() {
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to update columns", "error"),
   });
 
+  const renameColumn = useMutation({
+    mutationFn: ({ id, oldHeader, newHeader }: { id: number; oldHeader: string; newHeader: string }) =>
+      catalogApi.renamePackingGroupColumn(id, oldHeader, newHeader),
+    onSuccess: () => {
+      invalidate();
+      showToast("Column renamed successfully");
+    },
+    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to rename column", "error"),
+  });
+
   const deleteGroup = useMutation({
     mutationFn: (id: number) => catalogApi.deletePackingGroup(id),
     onSuccess: () => {
@@ -189,6 +199,9 @@ export default function HoCatalog() {
               group={pg}
               onDelete={() => deleteGroup.mutate(pg.id)}
               onUpdateGroup={(body) => updateGroup.mutate({ id: pg.id, body })}
+              onRenameColumn={(oldHeader, newHeader) =>
+                renameColumn.mutate({ id: pg.id, oldHeader, newHeader })
+              }
               onAddProduct={(body) => createProduct.mutate(body)}
               onUpdateProduct={(id, body) => updateProduct.mutate({ id, body })}
               onDeleteProduct={(id) => deleteProduct.mutate(id)}
@@ -247,6 +260,7 @@ interface GroupEditorProps {
   group: PackingGroup;
   onDelete: () => void;
   onUpdateGroup: (body: { label?: string; column_headers?: string[]; add_column?: string; remove_column?: string }) => void;
+  onRenameColumn: (oldHeader: string, newHeader: string) => void;
   onAddProduct: (body: {
     packing_group_id: number;
     name: string;
@@ -264,6 +278,7 @@ function GroupEditor({
   group,
   onDelete,
   onUpdateGroup,
+  onRenameColumn,
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
@@ -273,6 +288,23 @@ function GroupEditor({
   const [pSizes, setPSizes] = useState<Set<string>>(new Set());
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [newColumn, setNewColumn] = useState("");
+  const [editingColumn, setEditingColumn] = useState<string | null>(null);
+  const [columnDraft, setColumnDraft] = useState("");
+
+  const startEditColumn = (header: string) => {
+    setEditingColumn(header);
+    setColumnDraft(header);
+  };
+
+  const commitEditColumn = () => {
+    if (editingColumn === null) return;
+    const next = columnDraft.trim();
+    if (next && next !== editingColumn) {
+      onRenameColumn(editingColumn, next);
+    }
+    setEditingColumn(null);
+    setColumnDraft("");
+  };
 
   const addColumn = () => {
     const col = newColumn.trim();
@@ -321,7 +353,34 @@ function GroupEditor({
               key={h}
               className="inline-flex items-center gap-1 rounded border border-slate-300 bg-slate-50 px-1.5 py-0.5"
             >
-              {h}
+              {editingColumn === h ? (
+                <input
+                  autoFocus
+                  className="input h-5 w-20 px-1 py-0 text-xs"
+                  value={columnDraft}
+                  onChange={(e) => setColumnDraft(e.target.value)}
+                  onBlur={commitEditColumn}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      commitEditColumn();
+                    } else if (e.key === "Escape") {
+                      e.preventDefault();
+                      setEditingColumn(null);
+                      setColumnDraft("");
+                    }
+                  }}
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="hover:text-brand-700 hover:underline"
+                  title={`Rename ${h} column`}
+                  onClick={() => startEditColumn(h)}
+                >
+                  {h}
+                </button>
+              )}
               <button
                 type="button"
                 className="text-rose-500 hover:text-rose-700 leading-none"

@@ -77,6 +77,11 @@ class PackingGroupUpdate(BaseModel):
     display_order: int | None = None
 
 
+class PackingGroupColumnRename(BaseModel):
+    old_header: str
+    new_header: str
+
+
 class ProductCreate(BaseModel):
     packing_group_id: int
     s_no: int | None = None
