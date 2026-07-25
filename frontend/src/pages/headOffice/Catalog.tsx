@@ -290,6 +290,21 @@ function GroupEditor({
   const [newColumn, setNewColumn] = useState("");
   const [editingColumn, setEditingColumn] = useState<string | null>(null);
   const [columnDraft, setColumnDraft] = useState("");
+  const [editingLabel, setEditingLabel] = useState(false);
+  const [labelDraft, setLabelDraft] = useState(group.label);
+
+  const startEditLabel = () => {
+    setLabelDraft(group.label);
+    setEditingLabel(true);
+  };
+
+  const commitEditLabel = () => {
+    const next = labelDraft.trim();
+    if (next && next !== group.label) {
+      onUpdateGroup({ label: next });
+    }
+    setEditingLabel(false);
+  };
 
   const startEditColumn = (header: string) => {
     setEditingColumn(header);
@@ -340,7 +355,33 @@ function GroupEditor({
   return (
     <div className="border border-slate-200 rounded-md p-3 space-y-2">
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2">
-        <div className="font-medium text-sm">{group.label}</div>
+        {editingLabel ? (
+          <input
+            autoFocus
+            className="input text-sm font-medium flex-1 md:max-w-md"
+            value={labelDraft}
+            onChange={(e) => setLabelDraft(e.target.value)}
+            onBlur={commitEditLabel}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitEditLabel();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                setEditingLabel(false);
+              }
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            className="font-medium text-sm text-left hover:text-brand-700 hover:underline"
+            title="Edit group label"
+            onClick={startEditLabel}
+          >
+            {group.label}
+          </button>
+        )}
         <button
           className="text-xs text-rose-600 hover:underline self-start md:order-2"
           onClick={onDelete}
