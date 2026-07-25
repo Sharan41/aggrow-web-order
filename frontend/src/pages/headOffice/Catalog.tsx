@@ -26,6 +26,16 @@ export default function HoCatalog() {
     onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to create category", "error"),
   });
 
+  const updateCategory = useMutation({
+    mutationFn: ({ id, name }: { id: number; name: string }) =>
+      catalogApi.updateCategory(id, { name }),
+    onSuccess: () => {
+      invalidate();
+      showToast("Category renamed successfully");
+    },
+    onError: (err: any) => showToast(err?.response?.data?.detail || "Failed to rename category", "error"),
+  });
+
   const deleteCategory = useMutation({
     mutationFn: (id: number) => catalogApi.deleteCategory(id),
     onSuccess: () => {
@@ -178,7 +188,10 @@ export default function HoCatalog() {
       {catalog.categories.map((cat) => (
         <section key={cat.id} className="card p-3 md:p-4 space-y-4">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
-            <h2 className="text-base md:text-lg font-semibold text-brand-700">{cat.name}</h2>
+            <CategoryHeader
+              name={cat.name}
+              onRename={(name) => updateCategory.mutate({ id: cat.id, name })}
+            />
             <button
               className="text-xs text-rose-600 hover:underline self-start md:self-auto"
               onClick={() => {
@@ -210,6 +223,58 @@ export default function HoCatalog() {
         </section>
       ))}
     </div>
+  );
+}
+
+function CategoryHeader({
+  name,
+  onRename,
+}: {
+  name: string;
+  onRename: (name: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+
+  const commit = () => {
+    const next = draft.trim();
+    if (next && next !== name) onRename(next);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        className="input text-base md:text-lg font-semibold text-brand-700 flex-1 md:max-w-md"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            setEditing(false);
+          }
+        }}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="text-base md:text-lg font-semibold text-brand-700 text-left hover:underline"
+      title="Edit category name"
+      onClick={() => {
+        setDraft(name);
+        setEditing(true);
+      }}
+    >
+      {name}
+    </button>
   );
 }
 
